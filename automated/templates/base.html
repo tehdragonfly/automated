@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Automation system</title>
+<style>
+
+body {
+	margin: 0;
+	background-color: #eee;
+	font-family: sans-serif;
+}
+
+h1, h2, h3 {
+	text-align: center;
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+header {
+	position: fixed:
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 40px;
+	background-color: #fff;
+	text-align: center;
+	font-size: 16pt;
+	line-height: 40px;
+}
+
+header .active {
+	font-weight: bold;
+}
+
+#sidebar {
+	position: fixed;
+	top: 40px;
+	bottom: 0;
+	left: 0;
+	width: 200px;
+	overflow-y: scroll;
+}
+
+#sidebar ul {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+#sidebar ul li {
+	padding: 10px;
+	background-color: #f8f8f8;
+}
+
+#sidebar ul li:nth-child(2n) {
+	background-color: #fff;
+}
+
+#sidebar ul li a {
+	display: block;
+	margin: -10px;
+	padding: 10px;
+}
+
+#item_panel {
+	position: fixed;
+	top: 40px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	overflow-y: scroll;
+	padding: 0 10px
+}
+
+#sidebar + #item_panel {
+	left: 200px;
+}
+
+#item_panel ul, #item_panel ol {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+#item_panel li {
+	max-width: 70ex;
+	margin: 0 auto;
+	padding: 10px;
+	background-color: #f8f8f8;
+}
+
+#item_panel li:nth-child(2n) {
+	background-color: #fff;
+}
+
+#item_panel li p {
+	margin: 0;
+}
+
+.item_duration {
+	float: right;
+	margin-left: 5px;
+	color: #444;
+	text-align: right;
+}
+
+.item_time, .item_info {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.item_time {
+	margin-right: 5px;
+	color: #444;
+}
+
+.item_info {
+}
+
+input {
+	font-size: inherit;
+}
+
+.item_artist {
+	margin-top: 3px;
+	font-size: 10pt;
+	color: #444;
+}
+
+/* Schedule table */
+
+table {
+	width: 100%;
+	margin: 10px 0;
+}
+
+th {
+	padding: 2px;
+	background-color: #f8f8f8;
+}
+
+td {
+	padding: 2px;
+	background-color: #fff;
+	text-align: center;
+}
+
+td:first-child {
+	text-align: right;
+	background-color: #f8f8f8;
+}
+
+#edit_schedule {
+	margin: 10px;
+	text-align: center;
+}
+
+/* Clockwheels */
+
+#clockwheel_items form {
+	float: right;
+}
+
+#clockwheel_items li:last-child form {
+	float: none;
+	text-align: center;
+}
+
+</style>
+</head>
+<body>
+
+<header><a href="/"{% if section=="automation" %} class="active"{% endif %}>Automation</a> | <a href="{{url_for("schedule")}}"{% if section=="schedule" %} class="active"{% endif %}>Schedule</a> | <a href="{{url_for("playlist")}}"{% if section=="playlist" %} class="active"{% endif %}>Playlist</a></header>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base_playlist.html" %}
+{% block subcontent %}
+<div id="item_panel">
+  <ul>
+{% for song in songs: %}
+    <li>
+      <div class="item_duration">{{song.length}}
+        <div class="item_artist"><a href="{{url_for("song", song_id=song.id)}}">Edit</a></div>
+      </div>
+      <div class="item_info">{{song.name}}
+        <div class="item_artist">{% for artist in song.artists %}{{artist.name}}, {% endfor %}{{song.category.name}}</div>
+      </div>
+    </li>
+{% endfor %}
+
+    <li>
+      <form action="{{url_for("new_song")}}" method="post" enctype="multipart/form-data">
+        <div class="item_duration"><input type="text" name="length" size="5" placeholder="mm:ss" style="text-align: right"></div>
+        <div class="item_info"><input type="text" name="title" placeholder="Title...">
+          <div class="item_artist"><input type="text" name="artist" placeholder="Artist...">{% if current_category==None %}<select name="category_id">
+{% for category in all_categories: %}
+            <option value="{{category.id}}">{{category.name}}</option>
+{% endfor %}
+          </select>{% else %}<input type="hidden" name="category_id" value="{{current_category.id}}">, {{current_category.name}}{% endif %}</div>
+        </div>
+        <br>
+        <div class="item_duration"><div class="item_artist"><button>Add song</button></div></div>
+        <div class="item_artist"><input type="file" name="file"></div>
+      </form>
+    </li>
+  </ul>
+</div>
+{% endblock %}

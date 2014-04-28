@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<nav id="sidebar">
+  <ul>
+{% if current_clockwheel==None: %}
+    <li><strong>Schedule</strong></li>
+{% else %}
+    <li><a href="{{url_for("schedule")}}">Schedule</a></li>
+{% endif %}
+{% for clockwheel in all_clockwheels: %}
+{% if clockwheel==current_clockwheel %}
+    <li><strong>{{clockwheel.name}}</strong></li>
+{% else %}
+    <li><a href="{{url_for("clockwheel", clockwheel_id=clockwheel.id)}}">{{clockwheel.name}}</a></li>
+{% endif %}
+{% endfor %}
+    <li><form action="{{url_for("new_clockwheel")}}" method="post"><input id="new_clockwheel_name" type="text" name="name" placeholder="+ New clockwheel"></form></li>
+  </ul>
+</nav>
+
+{% block subcontent %}{% endblock %}
+{% endblock %}

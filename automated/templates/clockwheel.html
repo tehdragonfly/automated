@@ -1,0 +1,27 @@
+{% extends "base_schedule.html" %}
+{% block subcontent %}
+<div id="item_panel">
+  <h2>{{current_clockwheel.name}}</h2>
+  <ol id="clockwheel_items">
+{% for item in items: %}
+    <li>
+      <form action="{{url_for("remove_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
+        <input type="hidden" name="number" value="{{item.number}}">
+        <button type="submit">Remove</button>
+      </form>
+      <a href="{{url_for("playlist", category_id=item.category.id)}}">{{item.category.name}}</a>
+    </li>
+{% endfor %}
+    <li>
+      <form action="{{url_for("add_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
+        Add item: <select name="category_id">
+{% for category in all_categories: %}
+          <option value="{{category.id}}">{{category.name}}</option>
+{% endfor %}
+        </select>
+        <button type="submit">Add</button>
+      </form>
+    </li>
+  </ol>
+</div>
+{% endblock %}
