@@ -92,6 +92,18 @@ def edit_song(song_id):
         except ValueError:
             return "Please enter a length in the form MM:SS.", 400
 
+    try:
+        category_id = int(request.form["category_id"])
+    except ValueError:
+        category_id = None
+
+    if category_id is not None and category_id!=song.category_id:
+        try:
+            category = Session.query(Category).filter(Category.id==category_id).one()
+            song.category = category
+        except NoResultFound:
+            pass
+
     return redirect(url_for("song", song_id=song_id))
 
 def new_song():

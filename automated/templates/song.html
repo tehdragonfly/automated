@@ -5,6 +5,11 @@
   <form action="{{url_for("edit_song", song_id=song.id)}}" method="post">
     <p>Title: <input type="text" name="title" value="{{song.name}}"></p>
     <p>Artist: <input type="text" name="artist" value="{{artist_names}}"></p>
+    <p>Category: <select name="category_id">
+{% for category in all_categories: %}
+      <option value="{{category.id}}"{% if song.category==category %} selected="selected"{% endif %}>{{category.name}}</option>
+{% endfor %}
+    </select></p>
     <p>Length: <input type="text" name="length" value="{{song.length}}"></p>
     <p><button type="submit">Edit</button></p>
   </form>
