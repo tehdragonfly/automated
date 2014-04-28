@@ -111,10 +111,20 @@ def new_song():
     except (ValueError, NoResultFound):
         return "Invalid category.", 400
 
+    length = request.form["length"].strip()
+    if len(length)==0:
+        segment = AudioSegment.from_file("songs/"+song.filename)
+        length = timedelta(0, segment.duration_seconds)
+    else:
+        try:
+            length = string_to_timedelta(length)
+        except ValueError:
+            return "Please enter a length in the form MM:SS.", 400
+
     song = Song(
         name=request.form["title"],
         category=category,
-        length=timedelta(0, segment.duration_seconds),
+        length=length,
         filename="",
     )
     Session.add(song)
