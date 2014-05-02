@@ -12,7 +12,7 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm.exc import NoResultFound
 from thread import start_new_thread
 
-from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
+from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Play, Song
 
 base_path = "songs/"
 
@@ -59,6 +59,8 @@ while True:
         if len(song_history)>10:
             song_history.remove(song_history[0])
         start_new_thread(play_song, (song.filename,))
+        Session.add(Play(time=datetime.now(), song=song, length=song.length))
+        Session.commit()
         time.sleep(song.length.total_seconds())
         current_cw = get_clockwheel()
         continue
@@ -80,6 +82,8 @@ while True:
             if len(song_history)>10:
                 song_history.remove(song_history[0])
         start_new_thread(play_song, (song.filename,))
+        Session.add(Play(time=datetime.now(), song=song, length=song.length))
+        Session.commit()
         time.sleep(song.length.total_seconds())
         new_cw = get_clockwheel()
         # If the current clockwheel has changed, cut the loop short and move on to the new clockwheel.

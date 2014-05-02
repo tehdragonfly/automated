@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import (
     Table,
     Column,
+    DateTime,
+    Enum,
     ForeignKey,
     Integer,
     Interval,
@@ -83,9 +85,19 @@ class ClockwheelHour(Base):
         return "<Day #%s hour #%s: clockwheel #%s>" % (self.day, self.hour, self.clockwheel_id)
 
 
-song_artists = Table('song_artists', Base.metadata,
-    Column('song_id', Integer, ForeignKey('songs.id'), primary_key=True),
-    Column('artist_id', Integer, ForeignKey('artists.id'), primary_key=True)
+class Play(Base):
+    __tablename__ = "plays"
+    id = Column(Integer, primary_key=True)
+    # XXX NEEDS AN INDEX ON THIS
+    time = Column(DateTime, nullable=False)
+    length = Column(Interval, nullable=False)
+    type = Column(Enum("song", "event", "stop", name="play_type"), nullable=False, default="song")
+    song_id = Column(Integer, ForeignKey("songs.id"), nullable=False)
+
+
+song_artists = Table("song_artists", Base.metadata,
+    Column("song_id", Integer, ForeignKey("songs.id"), primary_key=True),
+    Column("artist_id", Integer, ForeignKey("artists.id"), primary_key=True)
 )
 
 Song.category = relationship(Category, backref="songs")
@@ -95,6 +107,8 @@ Clockwheel.items = relationship(ClockwheelItem, backref="clockwheel", order_by=C
 ClockwheelItem.category = relationship(Category)
 
 ClockwheelHour.clockwheel = relationship(Clockwheel)
+
+Play.song = relationship(Song)
 
 def string_to_timedelta(input_string):
     split = input_string.split(":")
