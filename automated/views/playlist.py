@@ -92,6 +92,24 @@ def edit_song(song_id):
         except ValueError:
             return "Please enter a length in the form MM:SS.", 400
 
+    min_length = request.form["min_length"].strip()
+    if len(length)==0:
+        song.min_length = song.length
+    else:
+        try:
+            song.min_length = string_to_timedelta(min_length)
+        except ValueError:
+            return "Please enter a minimum length in the form MM:SS.", 400
+
+    max_length = request.form["max_length"].strip()
+    if len(length)==0:
+        song.max_length = song.length
+    else:
+        try:
+            song.min_length = string_to_timedelta(max_length)
+        except ValueError:
+            return "Please enter a maximum length in the form MM:SS.", 400
+
     try:
         category_id = int(request.form["category_id"])
     except ValueError:
@@ -137,6 +155,8 @@ def new_song():
         name=request.form["title"],
         category=category,
         length=length,
+        min_length=length,
+        max_length=length,
         filename="",
     )
     Session.add(song)

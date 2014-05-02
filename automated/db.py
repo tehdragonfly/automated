@@ -32,6 +32,8 @@ class Song(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     name = Column(Unicode(50), nullable=False)
     length = Column(Interval, nullable=False)
+    min_length = Column(Interval, nullable=False)
+    max_length = Column(Interval, nullable=False)
     filename = Column(Unicode(100), nullable=False)
 
     def __repr__(self):
