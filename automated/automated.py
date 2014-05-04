@@ -21,7 +21,6 @@ PLAYER = get_player_name()
 FNULL = open(os.devnull, 'w')
 
 def play_song(item_id, item):
-    #print "PLAYING", item
     redis.hset("item:"+item_id, "status", "playing")
     subprocess.call([PLAYER, "-nodisp", "-autoexit", base_path+item["filename"]], stdout=FNULL, stderr=FNULL)
     redis.hset("item:"+item_id, "status", "played")
@@ -29,9 +28,8 @@ def play_song(item_id, item):
 def play_queue():
     while running:
         t = time.time()
-        result = redis.zrangebyscore("play_queue", t-1, t)
-        #print t, result
-        for item_id in result:
+        play_items = redis.zrangebyscore("play_queue", t-1, t)
+        for item_id in play_items:
             item = redis.hgetall("item:"+item_id)
             if len(item)==0:
                 redis.zrem("play_queue", item_id, item)
@@ -72,7 +70,17 @@ def scheduler():
     next_time = datetime.fromtimestamp(round(time.time()+3))
     current_cw = get_clockwheel(next_time)
     while True:
+
+        # Trim playlist items older than half an hour.
+        # XXX MAKE THIS THE LONGEST REPETITION GAP
+        old_items = redis.zrangebyscore("play_queue", 0, time.time()-1800)
+        for item_id in old_items:
+            redis.zrem("play_queue", item_id)
+            redis.delete("item:"+item_id)
+
         print "STARTING LOOP. CURRENT CLOCKWHEEL IS", current_cw
+
+        # Pick songs randomly if we don't have a clockwheel right now.
         if current_cw is None:
             print "CLOCKWHEEL IS NONE, PICKING ANY SONG."
             song = pick_song()
@@ -86,6 +94,8 @@ def scheduler():
                 print "SLEEPING"
                 time.sleep(300)
             current_cw = get_clockwheel(next_time)
+
+        # Otherwise pick songs from the clockwheel.
         for item, category in Session.query(ClockwheelItem, Category).join(Category).filter(
             ClockwheelItem.clockwheel==current_cw
         ).order_by(ClockwheelItem.number):
