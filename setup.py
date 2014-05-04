@@ -16,6 +16,7 @@ setup(
         "flask",
         "psycopg2",
         "pydub",
+        "redis",
         "sqlalchemy",
     ],
     entry_points="""\
