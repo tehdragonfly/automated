@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div id="item_panel">
+  <ol>
+{% for play_time, item, song in play_queue: %}
+    <li class="{{item.status}}">
+      <div class="item_time">{{play_time.strftime("%H:%M:%S")}}</div>
+      <div class="item_duration">{{item.length}}</div>
+      <div class="item_info">{{song.name}}
+        <div class="item_artist">{% for artist in song.artists %}{{artist.name}}, {% endfor %}{{song.category.name}}</div>
+      </div>
+    </li>
+{% endfor %}
+  </ol>
+</div>
+
+{% endblock %}

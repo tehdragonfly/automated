@@ -106,7 +106,7 @@ def edit_song(song_id):
         song.max_length = song.length
     else:
         try:
-            song.min_length = string_to_timedelta(max_length)
+            song.max_length = string_to_timedelta(max_length)
         except ValueError:
             return "Please enter a maximum length in the form MM:SS.", 400
 

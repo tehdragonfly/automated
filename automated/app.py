@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
-from views import schedule, playlist
+from views import automation, schedule, playlist
 
 app = Flask(__name__)
 
@@ -17,6 +17,10 @@ def shutdown_session(response=None):
 @app.teardown_request
 def shutdown_session(exception=None):
     Session.remove()
+
+# Automate
+
+app.add_url_rule("/", "automation", automation.automation, methods=("GET",))
 
 # Schedule
 
