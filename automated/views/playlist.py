@@ -143,7 +143,6 @@ def new_song():
 
     length = request.form["length"].strip()
     if len(length)==0:
-        segment = AudioSegment.from_file("songs/"+song.filename)
         length = timedelta(0, segment.duration_seconds)
     else:
         try:

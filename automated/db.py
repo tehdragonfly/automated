@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Interval,
+    Time,
     Unicode,
 )
 
@@ -85,6 +86,18 @@ class ClockwheelHour(Base):
 
     def __repr__(self):
         return "<Day #%s hour #%s: clockwheel #%s>" % (self.day, self.hour, self.clockwheel_id)
+
+
+class WeeklyEvent(Base):
+    __tablename__ = "weekly_events"
+    id = Column(Integer, primary_key=True)
+    day = Column(Integer, nullable=False)
+    time = Column(Time, nullable=False)
+    error_margin = Column(Interval, nullable=False)
+    name = Column(Unicode(50), nullable=False)
+    type = Column(Enum(u"audio", u"stop", name="event_type"))
+    length = Column(Interval, nullable=True)
+    filename = Column(Unicode(100), nullable=True)
 
 
 class Play(Base):

@@ -2,10 +2,15 @@
 {% block content %}
 <nav id="sidebar">
   <ul>
-{% if current_clockwheel==None: %}
+{% if page=="schedule": %}
     <li><strong>Schedule</strong></li>
 {% else %}
     <li><a href="{{url_for("schedule")}}">Schedule</a></li>
+{% endif %}
+{% if page=="events": %}
+    <li><strong>Events</strong></li>
+{% else %}
+    <li><a href="{{url_for("event_list")}}">Events</a></li>
 {% endif %}
 {% for clockwheel in all_clockwheels: %}
 {% if clockwheel==current_clockwheel %}

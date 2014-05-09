@@ -1,0 +1,54 @@
+{% extends "base_schedule.html" %}
+{% block subcontent %}
+<div id="item_panel">
+  <ul>
+{% for event in events: %}
+    <li>
+      <div class="item_time">
+        {{day_names[event.day]}} {{event.time}}
+        <div class="item_artist">± {{event.error_margin}}</div>
+      </div>
+      <div class="item_duration">
+{% if event.length: %}
+        {{event.length}}
+{% endif %}
+        <div class="item_artist"><form action="{{url_for("delete_event", event_id=event.id)}}" method="post">
+          <button style="font-size: 8pt;">Delete</button>
+        </form></div>
+      </div>
+      <div class="item_info">{{"Audio" if event.type=="audio" else "Stop"}}: {{event.name}}
+      </div>
+    </li>
+{% endfor %}
+    <li>
+      <form action="{{url_for("new_event")}}" method="post" enctype="multipart/form-data">
+        <div class="item_time">
+          <select name="day">
+            <option value="0">Mon</option>
+            <option value="1">Tue</option>
+            <option value="2">Wed</option>
+            <option value="3">Thu</option>
+            <option value="4">Fri</option>
+            <option value="5">Sat</option>
+            <option value="6">Sun</option>
+          </select>
+          <input type="text" name="time" size="5" placeholder="hh:mm:ss">
+          <div class="item_artist">± <input type="text" name="error_margin" size="5" placeholder="mm:ss"></div>
+        </div>
+        <div class="item_duration">
+          <input type="text" name="length" size="5" placeholder="mm:ss" style="text-align: right">
+          <div class="item_artist"><button>Add event</button></div>
+        </div>
+        <div class="item_info">
+          <select name="type">
+            <option value="audio">Audio</option>
+            <option value="stop">Stop</option>
+          </select>
+          <input type="text" name="name" placeholder="Name...">
+          <div class="item_artist"><input type="file" name="file"></div>
+        </div>
+      </form>
+    </li>
+  </ul>
+</div>
+{% endblock %}

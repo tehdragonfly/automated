@@ -1,4 +1,5 @@
 automated/songs/
+automated/events/
 *.pyc
 *.ini
 *.egg-info

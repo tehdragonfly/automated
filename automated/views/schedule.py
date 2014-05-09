@@ -1,10 +1,24 @@
 from collections import defaultdict
+from datetime import time, timedelta
 from flask import Flask, abort, redirect, render_template, request, url_for
+from pydub import AudioSegment
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
+from werkzeug import secure_filename
 
-from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
+from db import (
+    Session,
+    Category,
+    Clockwheel,
+    ClockwheelHour,
+    ClockwheelItem,
+    Song,
+    WeeklyEvent,
+    string_to_timedelta,
+)
+
+# Clockwheel schedule
 
 def schedule():
 
@@ -32,6 +46,7 @@ def schedule():
     return render_template(
         "schedule.html",
         section="schedule",
+        page="schedule",
         all_clockwheels=all_clockwheels,
         current_clockwheel=None,
         schedule_table=schedule_table,
@@ -67,6 +82,8 @@ def edit_schedule():
         Session.add(ClockwheelHour(day=day, hour=hour, clockwheel_id=clockwheel.id))
 
     return redirect(url_for("schedule"))
+
+# Clockwheels
 
 def clockwheel(clockwheel_id):
 
@@ -123,6 +140,105 @@ def remove_clockwheel_item(clockwheel_id):
     )).delete()
     return redirect(url_for("clockwheel", clockwheel_id=clockwheel_id))
 
+# Events
+
+def event_list():
+
+    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+
+    events = Session.query(WeeklyEvent).order_by(WeeklyEvent.day, WeeklyEvent.time).all()
+
+    day_names = {
+        0: "Mon",
+        1: "Tue",
+        2: "Wed",
+        3: "Thu",
+        4: "Fri",
+        5: "Sat",
+        6: "Sun",
+    }
+
+    return render_template(
+        "event_list.html",
+        section="schedule",
+        page="events",
+        all_clockwheels=all_clockwheels,
+        events=events,
+        day_names=day_names,
+    )
+
+def new_event():
+
+    try:
+        day = int(request.form["day"])
+        if day not in range(7):
+            raise ValueError
+    except ValueError:
+        return "Invalid day.", 400
+
+    try:
+        time_parts = request.form["time"].split(":")
+        if len(time_parts)!=3:
+            raise ValueError
+        event_time = time(*(int(_) for _ in time_parts))
+    except ValueError:
+        return "Please enter a time in the form HH:MM:SS.", 400
+
+    error_margin = request.form["error_margin"].strip()
+    if len(error_margin)==0:
+        error_margin = timedelta(0)
+    else:
+        try:
+            error_margin = string_to_timedelta(error_margin)
+        except ValueError:
+            return "Please enter an error margin in the form MM:SS.", 400
+
+    if request.form["type"] not in WeeklyEvent.type.property.columns[0].type.enums:
+        return "Invalid type.", 400
+
+    name = request.form["name"].strip()[:50]
+    if len(name)==0:
+        return "Please enter a name.", 400
+
+    # Audio events only
+    if request.form["type"]=="audio":
+
+        event_file = request.files["file"]
+        try:
+            segment = AudioSegment.from_file(event_file)
+        except:
+            return "That doesn't appear to be a valid audio file. Accepted formats are WAV, MP3 and OGG.", 400
+
+        length = request.form["length"].strip()
+        if len(length)==0:
+            length = timedelta(0, segment.duration_seconds)
+        else:
+            try:
+                length = string_to_timedelta(length)
+            except ValueError:
+                return "Please enter a length in the form MM:SS.", 400
+
+    event = WeeklyEvent(
+        day=day,
+        time=event_time,
+        error_margin=error_margin,
+        name=name,
+        type=request.form["type"],
+    )
+    Session.add(event)
+    Session.flush()
+
+    if request.form["type"]=="audio":
+        event.length = length
+        event.filename = ("%s_%s" % (event.id, secure_filename(event_file.filename)))[:100]
+        event_file.seek(0)
+        event_file.save("events/"+event.filename)
+
+    return redirect(request.headers["Referer"])
+
+def delete_event(event_id):
+    Session.query(WeeklyEvent).filter(WeeklyEvent.id==event_id).delete()
+    return redirect(request.headers["Referer"])
 
 
 
