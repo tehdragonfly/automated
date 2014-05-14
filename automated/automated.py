@@ -10,9 +10,15 @@ from sqlalchemy.orm.exc import NoResultFound
 from threading import Thread
 from uuid import uuid4
 
-from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Play, Song
+from db import Session, Artist, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Play, Song
 
 redis = StrictRedis()
+
+# Set default values for repetition limits if they don't exist already.
+if redis.get("song_limit") is None:
+    redis.set("song_limit", 3600)
+if redis.get("artist_limit") is None:
+    redis.set("artist_limit", 3600)
 
 base_path = "songs/"
 
@@ -49,10 +55,29 @@ def get_clockwheel(target_time):
     except NoResultFound:
         return None
 
-def pick_song(category_id=None):
+def pick_song(queue_time, category_id=None):
+
     song_query = Session.query(Song).order_by(func.random())
+
     if category_id is not None:
         song_query = song_query.filter(Song.category_id==category_id)
+
+    queue_timestamp = time.mktime(queue_time.timetuple())
+
+    # Song limit
+    song_timestamp = queue_timestamp - float(redis.get("song_limit"))
+    songs = set()
+    for item_id in redis.zrangebyscore("play_queue", song_timestamp, queue_timestamp):
+        songs.add(redis.hget("item:"+item_id, "song_id"))
+    song_query = song_query.filter(~Song.id.in_(songs))
+
+    # Artist limit
+    artist_timestamp = queue_timestamp - float(redis.get("artist_limit"))
+    artists = set()
+    for item_id in redis.zrangebyscore("play_queue", artist_timestamp, queue_timestamp):
+        artists = artists | redis.smembers("item:"+item_id+":artists")
+    song_query = song_query.filter(~Song.artists.any(Artist.id.in_(artists)))
+
     return song_query.first()
 
 def queue_song(queue_time, song):
@@ -63,6 +88,7 @@ def queue_song(queue_time, song):
         "length": song.length.total_seconds(),
         "filename": song.filename,
     })
+    redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
     redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
 
 def scheduler():
@@ -76,13 +102,14 @@ def scheduler():
         for item_id in old_items:
             redis.zrem("play_queue", item_id)
             redis.delete("item:"+item_id)
+            redis.delete("item:"+item_id+":artists")
 
         print "STARTING LOOP. CURRENT CLOCKWHEEL IS", current_cw
 
         # Pick songs randomly if we don't have a clockwheel right now.
         if current_cw is None:
             print "CLOCKWHEEL IS NONE, PICKING ANY SONG."
-            song = pick_song()
+            song = pick_song(next_time)
             if song is None:
                 print "NOTHING HERE, SKIPPING."
                 continue
@@ -100,7 +127,7 @@ def scheduler():
         ).order_by(ClockwheelItem.number):
             print "ITEM", item
             print "CATEGORY", category
-            song = pick_song(category.id)
+            song = pick_song(next_time, category.id)
             if song is None:
                 print "NOTHING HERE, SKIPPING."
                 continue
