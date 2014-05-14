@@ -12,6 +12,11 @@
 {% else %}
     <li><a href="{{url_for("event_list")}}">Events</a></li>
 {% endif %}
+{% if page=="limits": %}
+    <li><strong>Repetition limits</strong></li>
+{% else %}
+    <li><a href="{{url_for("limits")}}">Repetition limits</a></li>
+{% endif %}
 {% for clockwheel in all_clockwheels: %}
 {% if clockwheel==current_clockwheel %}
     <li><strong>{{clockwheel.name}}</strong></li>

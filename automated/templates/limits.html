@@ -1,0 +1,12 @@
+{% extends "base_schedule.html" %}
+{% block subcontent %}
+<div id="item_panel">
+  <h2>Repetition limits</h2>
+  <form action="{{url_for("save_limits")}}" method="post">
+    <p>Don't repeat a song for: <input type="text" name="song_limit" value="{{song_limit}}"></p>
+    <p>Don't repeat an artist for: <input type="text" name="artist_limit" value="{{artist_limit}}"></p>
+    <p>Don't repeat an album for: <input type="text" name="album_limit" value="{{album_limit}}"></p>
+    <p><button type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

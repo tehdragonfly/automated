@@ -32,6 +32,9 @@ app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>", "clockwheel", sche
 app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/add_item", "add_clockwheel_item", schedule.add_clockwheel_item, methods=("POST",))
 app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/remove_item", "remove_clockwheel_item", schedule.remove_clockwheel_item, methods=("POST",))
 
+app.add_url_rule("/schedule/limits", "limits", schedule.limits, methods=("GET",))
+app.add_url_rule("/schedule/limits/save", "save_limits", schedule.save_limits, methods=("POST",))
+
 app.add_url_rule("/schedule/events", "event_list", schedule.event_list, methods=("GET",))
 app.add_url_rule("/schedule/events/new", "new_event", schedule.new_event, methods=("POST",))
 app.add_url_rule("/schedule/events/<int:event_id>/delete", "delete_event", schedule.delete_event, methods=("POST",))

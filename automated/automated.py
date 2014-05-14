@@ -13,7 +13,6 @@ from uuid import uuid4
 from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Play, Song
 
 redis = StrictRedis()
-redis.flushall()
 
 base_path = "songs/"
 
@@ -118,6 +117,12 @@ def scheduler():
                 print "CLOCKWHEEL CHANGED, BREAKING."
                 current_cw = new_cw
                 break
+
+# Make sure any existing future items are cleared.
+future_items = redis.zrangebyscore("play_queue", time.time(), "inf")
+for item_id in future_items:
+    redis.zrem("play_queue", item_id)
+    redis.delete("item:"+item_id)
 
 running = True
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug import secure_filename
 
+from automation import redis
 from db import (
     Session,
     Category,
@@ -140,6 +141,38 @@ def remove_clockwheel_item(clockwheel_id):
     )).delete()
     return redirect(url_for("clockwheel", clockwheel_id=clockwheel_id))
 
+# Limits
+
+def limits():
+    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+    return render_template(
+        "limits.html",
+        section="schedule",
+        page="limits",
+        all_clockwheels=all_clockwheels,
+        song_limit=timedelta(0, float(redis.get("song_limit") or 0)),
+        artist_limit=timedelta(0, float(redis.get("artist_limit") or 0)),
+        album_limit=timedelta(0, float(redis.get("album_limit") or 0)),
+    )
+
+def save_limits():
+    try:
+        redis.set(
+            "song_limit",
+            string_to_timedelta(request.form["song_limit"]).total_seconds(),
+        )
+        redis.set(
+            "artist_limit",
+            string_to_timedelta(request.form["artist_limit"]).total_seconds(),
+        )
+        redis.set(
+            "album_limit",
+            string_to_timedelta(request.form["album_limit"]).total_seconds(),
+        )
+    except ValueError:
+        return "Please enter a time in the form hh:mm:ss.", 400
+    return redirect(url_for("limits"))
+
 # Events
 
 def event_list():
@@ -239,20 +272,4 @@ def new_event():
 def delete_event(event_id):
     Session.query(WeeklyEvent).filter(WeeklyEvent.id==event_id).delete()
     return redirect(request.headers["Referer"])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
