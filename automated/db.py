@@ -32,6 +32,7 @@ class Song(Base):
     id = Column(Integer, primary_key=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     name = Column(Unicode(50), nullable=False)
+    album = Column(Unicode(50), nullable=True)
     length = Column(Interval, nullable=False)
     min_length = Column(Interval, nullable=False)
     max_length = Column(Interval, nullable=False)

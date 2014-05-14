@@ -8,7 +8,11 @@
       <div class="item_time">{{play_time.strftime("%H:%M:%S")}}</div>
       <div class="item_duration">{{item.length}}</div>
       <div class="item_info">{{song.name}}
-        <div class="item_artist">{% for artist in song.artists %}{{artist.name}}, {% endfor %}{{song.category.name}}</div>
+        <div class="item_artist">
+{% if song.album: %}Album: {{song.album}}, {% endif %}
+{% if song.artists: %}Artist: {% for artist in song.artists %}{{artist.name}}, {% endfor %}{% endif %}
+Category: {{song.category.name}}
+        </div>
       </div>
     </li>
 {% endfor %}
