@@ -19,6 +19,8 @@ if redis.get("song_limit") is None:
     redis.set("song_limit", 3600)
 if redis.get("artist_limit") is None:
     redis.set("artist_limit", 3600)
+if redis.get("album_limit") is None:
+    redis.set("album_limit", 3600)
 
 base_path = "songs/"
 
@@ -69,25 +71,40 @@ def pick_song(queue_time, category_id=None):
     songs = set()
     for item_id in redis.zrangebyscore("play_queue", song_timestamp, queue_timestamp):
         songs.add(redis.hget("item:"+item_id, "song_id"))
-    song_query = song_query.filter(~Song.id.in_(songs))
+    if len(songs)!=0:
+        song_query = song_query.filter(~Song.id.in_(songs))
 
     # Artist limit
     artist_timestamp = queue_timestamp - float(redis.get("artist_limit"))
     artists = set()
     for item_id in redis.zrangebyscore("play_queue", artist_timestamp, queue_timestamp):
         artists = artists | redis.smembers("item:"+item_id+":artists")
-    song_query = song_query.filter(~Song.artists.any(Artist.id.in_(artists)))
+    if len(artists)!=0:
+        song_query = song_query.filter(~Song.artists.any(Artist.id.in_(artists)))
+
+    # Album limit
+    album_timestamp = queue_timestamp - float(redis.get("album_limit"))
+    albums = set()
+    for item_id in redis.zrangebyscore("play_queue", album_timestamp, queue_timestamp):
+        album = redis.hget("item:"+item_id, "album")
+        if album is not None:
+            albums.add(album)
+    if len(albums)!=0:
+        song_query = song_query.filter(~Song.album.in_(albums))
 
     return song_query.first()
 
 def queue_song(queue_time, song):
     queue_item_id = str(uuid4())
-    redis.hmset("item:"+queue_item_id, {
+    item_info = {
         "status": "queued",
         "song_id": song.id,
         "length": song.length.total_seconds(),
         "filename": song.filename,
-    })
+    }
+    if song.album is not None:
+        item_info["album"] = song.album
+    redis.hmset("item:"+queue_item_id, item_info)
     redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
     redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
 
