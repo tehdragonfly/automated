@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-
+<nav id="sidebar">
+  <ul>
+    <li><form action="{{url_for("log")}}" method="get"><input type="text" name="date" placeholder="dd/mm/yyyy" value="{{current_date.strftime("%d/%m/%Y")}}"> <button type="submit">View date</button></form></li>
+  </ul>
+</nav>
 <div id="item_panel">
+  <h2>{{current_date.strftime("%d %B %Y")}}</h2>
+{% if log: %}
   <ol>
 {% for play in log: %}
     <li>
@@ -17,6 +23,9 @@ Category: {{play.song.category.name}}
     </li>
 {% endfor %}
   </ol>
+{% else: %}
+  <p style="text-align: center;">No songs were played on this date.</p>
+{% endif %}
 </div>
 
 {% endblock %}
