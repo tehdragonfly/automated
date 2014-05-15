@@ -27,7 +27,22 @@ base_path = "songs/"
 PLAYER = get_player_name()
 FNULL = open(os.devnull, 'w')
 
-def play_song(item_id, item):
+def play_song(queue_time, item_id, item):
+
+    print "PREPARING", item
+
+    print "QUEUE TIME", queue_time
+
+    # Calculate how early we're meant to start the item and wait until then.
+
+    play_time = queue_time - float(item["start"])
+
+    print "PLAY TIME", queue_time
+    print "WAITING", play_time - time.time()
+
+    time.sleep(play_time - time.time())
+
+
     redis.hset("item:"+item_id, "status", "playing")
     Session.add(Play(time=datetime.now(), song_id=int(item["song_id"]), length=timedelta(0, float(item["length"]))))
     Session.commit()
@@ -37,15 +52,17 @@ def play_song(item_id, item):
 def play_queue():
     while running:
         t = time.time()
-        play_items = redis.zrangebyscore("play_queue", t-1, t)
-        for item_id in play_items:
+        # Cue things up 5 seconds ahead.
+        play_items = redis.zrangebyscore("play_queue", t+4, t+5, withscores=True)
+        for item_id, queue_time in play_items:
             item = redis.hgetall("item:"+item_id)
             if len(item)==0:
                 redis.zrem("play_queue", item_id, item)
                 continue
             if item["status"] != "queued":
                 continue
-            Thread(target=play_song, args=(item_id, item)).start()
+            Thread(target=play_song, args=(queue_time, item_id, item)).start()
+            redis.hset("item:"+item_id, "status", "preparing")
         time.sleep(0.01)
 
 def get_clockwheel(target_time):
@@ -101,6 +118,7 @@ def queue_song(queue_time, song):
     item_info = {
         "status": "queued",
         "song_id": song.id,
+        "start": song.start.total_seconds(),
         "length": song.length.total_seconds(),
         "filename": song.filename,
     }
@@ -111,7 +129,7 @@ def queue_song(queue_time, song):
     redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
 
 def scheduler():
-    next_time = datetime.fromtimestamp(round(time.time()+3))
+    next_time = datetime.fromtimestamp(round(time.time()+5))
     current_cw = get_clockwheel(next_time)
     while True:
 
