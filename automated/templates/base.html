@@ -181,7 +181,7 @@ td:first-child {
 </head>
 <body>
 
-<header><a href="{{url_for("automation")}}"{% if section=="automation" %} class="active"{% endif %}>Automation</a> | <a href="{{url_for("schedule")}}"{% if section=="schedule" %} class="active"{% endif %}>Schedule</a> | <a href="{{url_for("playlist")}}"{% if section=="playlist" %} class="active"{% endif %}>Playlist</a></header>
+<header><a href="{{url_for("automation")}}"{% if section=="automation" %} class="active"{% endif %}>Automation</a> | <a href="{{url_for("schedule")}}"{% if section=="schedule" %} class="active"{% endif %}>Schedule</a> | <a href="{{url_for("playlist")}}"{% if section=="playlist" %} class="active"{% endif %}>Playlist</a> | <a href="{{url_for("log")}}"{% if section=="log" %} class="active"{% endif %}>Log</a></header>
 
 {% block content %}{% endblock %}
 

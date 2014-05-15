@@ -1,5 +1,8 @@
+import tempfile
+
+from csv import writer
 from datetime import date, datetime, timedelta
-from flask import abort, redirect, render_template, request, url_for
+from flask import abort, make_response, render_template, request, url_for
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.exc import NoResultFound
@@ -34,10 +37,29 @@ def log():
         joinedload_all("song.category"),
         joinedload_all("song.artists"),
     ).all()
-    return render_template(
-        "log.html",
-        section="log",
-        current_date=current_date,
-        log=plays,
-    )
+    if "format" in request.values and request.values["format"]=="csv":
+        with tempfile.TemporaryFile("w+b") as f:
+            csv = writer(f, dialect="excel")
+            csv.writerow(("time", "title", "artist", "album"))
+            for play in plays:
+                csv.writerow((
+                    play.time.strftime("%H:%M:%S"),
+                    play.song.name,
+                    ", ".join(_.name for _ in play.song.artists),
+                    play.song.album or "",
+                ))
+            f.seek(0)
+            response = make_response(f.read())
+            response.headers["Content-Disposition"] = (
+                "attachment; filename=automation_%s_%s_%s.csv"
+                % (current_date.year, current_date.month, current_date.day)
+            )
+            return response
+    else:
+        return render_template(
+            "log.html",
+            section="log",
+            current_date=current_date,
+            log=plays,
+        )
 

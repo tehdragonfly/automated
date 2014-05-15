@@ -2,7 +2,19 @@
 {% block content %}
 <nav id="sidebar">
   <ul>
-    <li><form action="{{url_for("log")}}" method="get"><input type="text" name="date" placeholder="dd/mm/yyyy" value="{{current_date.strftime("%d/%m/%Y")}}"> <button type="submit">View date</button></form></li>
+    <li>
+      <form action="{{url_for("log")}}" method="get">
+        <input type="text" name="date" placeholder="dd/mm/yyyy" value="{{current_date.strftime("%d/%m/%Y")}}">
+        <button type="submit">View date</button>
+      </form>
+    </li>
+    <li>
+      <form action="{{url_for("log")}}" method="get">
+        <input type="hidden" name="date" value="{{current_date.strftime("%d/%m/%Y")}}">
+        <input type="hidden" name="format" value="csv">
+        <button type="submit">Export as CSV</button>
+      </form>
+    </li>
   </ul>
 </nav>
 <div id="item_panel">
