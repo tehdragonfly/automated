@@ -7,7 +7,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.exc import NoResultFound
 
-from db import Session, Play
+from automated.db import Session, Play
 
 def log():
     if "date" in request.values and request.values["date"]!="":
@@ -36,7 +36,7 @@ def log():
     )).options(
         joinedload_all("song.category"),
         joinedload_all("song.artists"),
-    ).all()
+    ).order_by(Play.time).all()
     if "format" in request.values and request.values["format"]=="csv":
         with tempfile.TemporaryFile("w+b") as f:
             csv = writer(f, dialect="excel")

@@ -2,13 +2,13 @@ from collections import defaultdict
 from datetime import time, timedelta
 from flask import Flask, abort, redirect, render_template, request, url_for
 from pydub import AudioSegment
+from redis import StrictRedis
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug import secure_filename
 
-from automation import redis
-from db import (
+from automated.db import (
     Session,
     Category,
     Clockwheel,
@@ -18,6 +18,8 @@ from db import (
     WeeklyEvent,
     string_to_timedelta,
 )
+
+redis = StrictRedis()
 
 # Clockwheel schedule
 

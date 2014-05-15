@@ -4,8 +4,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
-from views import automation, schedule, playlist, log
+from automated.db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
+from automated.views import automation, schedule, playlist, log
 
 app = Flask(__name__)
 

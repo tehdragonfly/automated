@@ -17,7 +17,7 @@ from sqlalchemy import (
 import datetime
 import time
 
-engine = create_engine("postgres://meow:meow@localhost/foreverchannel", convert_unicode=True, pool_recycle=3600, echo=True)
+engine = create_engine("postgres://meow:meow@localhost/foreverchannel", convert_unicode=True, pool_recycle=3600, echo=False)
 Session = scoped_session(sessionmaker(bind=engine, autoflush=False))
 
 Base = declarative_base(bind=engine)

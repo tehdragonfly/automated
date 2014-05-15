@@ -4,7 +4,7 @@ from redis import StrictRedis
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from db import Session, Song
+from automated.db import Session, Song
 
 redis = StrictRedis()
 

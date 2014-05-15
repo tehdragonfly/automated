@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug import secure_filename
 
-from db import Session, Artist, Category, Song, string_to_timedelta
+from automated.db import Session, Artist, Category, Song, string_to_timedelta
 
 def playlist(category_id=None):
     songs = Session.query(Song).order_by(Song.name).options(
