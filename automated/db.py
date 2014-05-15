@@ -33,10 +33,23 @@ class Song(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     name = Column(Unicode(50), nullable=False)
     album = Column(Unicode(50), nullable=True)
-    length = Column(Interval, nullable=False)
-    min_length = Column(Interval, nullable=False)
-    max_length = Column(Interval, nullable=False)
+    start = Column(Interval, nullable=False, default=timedelta(0))
+    end = Column(Interval, nullable=False)
+    min_end = Column(Interval, nullable=False)
+    max_end = Column(Interval, nullable=False)
     filename = Column(Unicode(100), nullable=False)
+
+    @property
+    def length(self):
+        return self.end - self.start
+
+    @property
+    def min_length(self):
+        return self.min_end - self.start
+
+    @property
+    def max_length(self):
+        return self.max_end - self.start
 
     def __repr__(self):
         return "<Song #%s: %s>" % (self.id, self.name)
@@ -130,14 +143,17 @@ def string_to_timedelta(input_string):
     split = input_string.split(":")
     # hh:mm:ss
     if len(split)==3:
-        return timedelta(0, float(split[0])*3600 + float(split[1])*60 + float(split[2]))
+        td = timedelta(0, float(split[0])*3600 + float(split[1])*60 + float(split[2]))
     # mm:ss
     elif len(split)==2:
-        return timedelta(0, float(split[0])*60 + float(split[1]))
+        td = timedelta(0, float(split[0])*60 + float(split[1]))
     # seconds only
     elif len(split)==1:
-        return timedelta(0, float(split[0]))
+        td = timedelta(0, float(split[0]))
     # ???
     else:
         raise ValueError
-
+    # Lengths can't be negative.
+    if td<timedelta(0):
+        raise ValueError
+    return td

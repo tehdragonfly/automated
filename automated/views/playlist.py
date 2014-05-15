@@ -88,33 +88,45 @@ def edit_song(song_id):
             Session.add(artist)
         song.artists.append(artist)
 
-    length = request.form["length"].strip()
-    if len(length)==0:
+    start = request.form["start"].strip()
+    if len(start)==0:
+        song.start = timedelta(0)
+    else:
+        try:
+            start = string_to_timedelta(start)
+            if start > timedelta(0, 3):
+                return "Start point can't be later than 3 seconds.", 400
+            song.start = start
+        except ValueError:
+            return "Please enter an end point in the form MM:SS.", 400
+
+    end = request.form["end"].strip()
+    if len(end)==0:
         segment = AudioSegment.from_file("songs/"+song.filename)
-        song.length = timedelta(0, segment.duration_seconds)
+        song.end = timedelta(0, segment.duration_seconds)
     else:
         try:
-            song.length = string_to_timedelta(length)
+            song.end = string_to_timedelta(end)
         except ValueError:
-            return "Please enter a length in the form MM:SS.", 400
+            return "Please enter an end point in the form MM:SS.", 400
 
-    min_length = request.form["min_length"].strip()
-    if len(length)==0:
-        song.min_length = song.length
+    min_end = request.form["min_end"].strip()
+    if len(end)==0:
+        song.min_end = song.end
     else:
         try:
-            song.min_length = string_to_timedelta(min_length)
+            song.min_end = string_to_timedelta(min_end)
         except ValueError:
-            return "Please enter a minimum length in the form MM:SS.", 400
+            return "Please enter a minimum end point in the form MM:SS.", 400
 
-    max_length = request.form["max_length"].strip()
-    if len(length)==0:
-        song.max_length = song.length
+    max_end = request.form["max_end"].strip()
+    if len(end)==0:
+        song.max_end = song.end
     else:
         try:
-            song.max_length = string_to_timedelta(max_length)
+            song.max_end = string_to_timedelta(max_end)
         except ValueError:
-            return "Please enter a maximum length in the form MM:SS.", 400
+            return "Please enter a maximum end point in the form MM:SS.", 400
 
     try:
         category_id = int(request.form["category_id"])
@@ -152,6 +164,7 @@ def new_song():
     except (ValueError, NoResultFound):
         return "Invalid category.", 400
 
+    # Default to not having a start point for now because that's fine for most songs.
     length = request.form["length"].strip()
     if len(length)==0:
         length = timedelta(0, segment.duration_seconds)
@@ -165,9 +178,9 @@ def new_song():
         name=request.form["title"],
         album=album,
         category=category,
-        length=length,
-        min_length=length,
-        max_length=length,
+        end=length,
+        min_end=length,
+        max_end=length,
         filename="",
     )
     Session.add(song)

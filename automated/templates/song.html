@@ -11,9 +11,10 @@
       <option value="{{category.id}}"{% if song.category==category %} selected="selected"{% endif %}>{{category.name}}</option>
 {% endfor %}
     </select></p>
-    <p>Length: <input type="text" name="length" value="{{song.length}}"></p>
-    <p>Minimum length: <input type="text" name="min_length" value="{{song.min_length}}"></p>
-    <p>Maximum length: <input type="text" name="max_length" value="{{song.max_length}}"></p>
+    <p>Start: <input type="text" name="start" value="{{song.start}}"></p>
+    <p>End: <input type="text" name="end" value="{{song.end}}"></p>
+    <p>Minimum end: <input type="text" name="min_end" value="{{song.min_end}}"></p>
+    <p>Maximum end: <input type="text" name="max_end" value="{{song.max_end}}"></p>
     <p><button type="submit">Edit</button></p>
   </form>
 </div>
