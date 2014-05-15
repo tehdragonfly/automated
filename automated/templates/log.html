@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div id="item_panel">
+  <ol>
+{% for play in log: %}
+    <li>
+      <div class="item_time">{{play.time.strftime("%H:%M:%S")}}</div>
+      <div class="item_duration">{{play.song.length}}</div>
+      <div class="item_info">{{play.song.name}}
+        <div class="item_artist">
+{% if play.song.album: %}Album: {{play.song.album}}, {% endif %}
+{% if play.song.artists: %}Artist: {% for artist in play.song.artists %}{{artist.name}}, {% endfor %}{% endif %}
+Category: {{play.song.category.name}}
+        </div>
+      </div>
+    </li>
+{% endfor %}
+  </ol>
+</div>
+
+{% endblock %}

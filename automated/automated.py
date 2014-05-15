@@ -29,6 +29,8 @@ FNULL = open(os.devnull, 'w')
 
 def play_song(item_id, item):
     redis.hset("item:"+item_id, "status", "playing")
+    Session.add(Play(time=datetime.now(), song_id=int(item["song_id"]), length=timedelta(0, float(item["length"]))))
+    Session.commit()
     subprocess.call([PLAYER, "-nodisp", "-autoexit", base_path+item["filename"]], stdout=FNULL, stderr=FNULL)
     redis.hset("item:"+item_id, "status", "played")
 

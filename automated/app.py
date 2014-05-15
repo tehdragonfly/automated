@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
-from views import automation, schedule, playlist
+from views import automation, schedule, playlist, log
 
 app = Flask(__name__)
 
@@ -47,4 +47,8 @@ app.add_url_rule("/playlist/categories/<int:category_id>", "playlist", playlist.
 app.add_url_rule("/playlist/songs/new", "new_song", playlist.new_song, methods=("POST",))
 app.add_url_rule("/playlist/songs/<int:song_id>", "song", playlist.song, methods=("GET",))
 app.add_url_rule("/playlist/songs/<int:song_id>/edit", "edit_song", playlist.edit_song, methods=("POST",))
+
+# Log
+
+app.add_url_rule("/log", "log", log.log, methods=("GET",))
 
