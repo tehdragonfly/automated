@@ -17,7 +17,7 @@ from sqlalchemy import (
 import datetime
 import time
 
-engine = create_engine("postgres://meow:meow@localhost/foreverchannel", convert_unicode=True, pool_recycle=3600, echo=False)
+engine = create_engine("postgres://meow:meow@localhost/foreverchannel", convert_unicode=True, pool_recycle=3600)
 Session = scoped_session(sessionmaker(bind=engine, autoflush=False))
 
 Base = declarative_base(bind=engine)
@@ -112,6 +112,9 @@ class WeeklyEvent(Base):
     type = Column(Enum(u"audio", u"stop", name="event_type"))
     length = Column(Interval, nullable=True)
     filename = Column(Unicode(100), nullable=True)
+
+    def __repr__(self):
+        return "<Event #%s: %s %s, %s, %s>" % (self.id, self.day, self.time, self.type, self.name)
 
 
 class Play(Base):

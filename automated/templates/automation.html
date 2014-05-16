@@ -1,22 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
 
+<nav id="topbar">
+  <ul>
+    <li>
+      <form action="{{url_for("automation_play")}}" method="post">
+        <button id="play_button"{% if alive: %} disabled="disabled"{% endif %}>Play</button>
+      </form>
+    </li>
+    <li>
+      <form action="{{url_for("automation_stop")}}" method="post">
+        <button id="stop_button"{% if not running: %} disabled="disabled"{% endif %}>Stop</button>
+      </form>
+    </li>
+    <li>
+      <form action="{{url_for("automation_stop_now")}}" method="post">
+        <button id="stop_now_button"{% if not alive: %} disabled="disabled"{% endif %}>Stop now</button>
+      </form>
+    </li>
+  </ul>
+</nav>
+
 <div id="item_panel">
   <ol>
-{% for play_time, item, song in play_queue: %}
-    <li class="{{item.status}}">
+{% for play_time, queue_item, db_item in play_queue: %}
+    <li class="{{queue_item.status}}">
       <div class="item_time">{{play_time.strftime("%H:%M:%S")}}</div>
-      <div class="item_duration">{{item.length}}</div>
-      <div class="item_info">{{song.name}}
+{% if queue_item.length: %}
+      <div class="item_duration">{{queue_item.length}}</div>
+{% endif %}
+      <div class="item_info">{{db_item.name}}
         <div class="item_artist">
-{% if song.album: %}Album: {{song.album}}, {% endif %}
-{% if song.artists: %}Artist: {% for artist in song.artists %}{{artist.name}}, {% endfor %}{% endif %}
-Category: {{song.category.name}}
+{% if queue_item.type=="song": %}
+{% if db_item.album: %}Album: {{db_item.album}}, {% endif %}
+{% if db_item.artists: %}Artist: {% for artist in db_item.artists %}{{artist.name}}, {% endfor %}{% endif %}
+Category: {{db_item.category.name}}
+{% else: %}
+{{queue_item.type}} event
+{% endif %}
         </div>
       </div>
     </li>
 {% endfor %}
   </ol>
 </div>
+
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script>
+
+</script>
 
 {% endblock %}

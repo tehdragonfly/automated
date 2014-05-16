@@ -21,6 +21,9 @@ def shutdown_session(exception=None):
 # Automate
 
 app.add_url_rule("/", "automation", automation.automation, methods=("GET",))
+app.add_url_rule("/play", "automation_play", automation.play, methods=("POST",))
+app.add_url_rule("/stop", "automation_stop", automation.stop, methods=("POST",))
+app.add_url_rule("/stop_now", "automation_stop_now", automation.stop_now, methods=("POST",))
 
 # Schedule
 
