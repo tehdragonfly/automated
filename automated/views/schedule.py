@@ -33,7 +33,6 @@ def schedule():
     for ch in clockwheel_hours:
         schedule[ch.day][ch.hour] = ch.clockwheel
 
-    # XXX COMMENT THE FUCK OUT OF THIS
     schedule_table = defaultdict(lambda: [])
     for day in range(7):
         last_cw = None

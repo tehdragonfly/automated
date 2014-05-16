@@ -135,7 +135,6 @@ class WeeklyEvent(Base):
 class Play(Base):
     __tablename__ = "plays"
     id = Column(Integer, primary_key=True)
-    # XXX NEEDS AN INDEX ON THIS
     time = Column(DateTime, nullable=False)
     length = Column(Interval, nullable=False)
     type = Column(Enum("song", "event", "stop", name="play_type"), nullable=False, default="song")

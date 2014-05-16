@@ -81,7 +81,6 @@ def edit_song(song_id):
         if artist_name=="":
             continue
         try:
-            # XXX NEEDS A UNIQUE CONSTRAINT ON THIS
             artist = Session.query(Artist).filter(func.lower(Artist.name)==artist_name.lower()).one()
         except NoResultFound:
             artist = Artist(name=artist_name)
@@ -191,7 +190,6 @@ def new_song():
         if artist_name=="":
             continue
         try:
-            # XXX NEEDS A UNIQUE CONSTRAINT ON THIS
             artist = Session.query(Artist).filter(func.lower(Artist.name)==artist_name.lower()).one()
         except NoResultFound:
             artist = Artist(name=artist_name)
