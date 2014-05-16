@@ -17,11 +17,16 @@ from sqlalchemy import (
 import datetime
 import time
 
-engine = create_engine("postgres://meow:meow@localhost/foreverchannel", convert_unicode=True, pool_recycle=3600)
+engine = create_engine(
+    "postgres://meow:meow@localhost/foreverchannel",
+    convert_unicode=True,
+    pool_recycle=3600,
+)
 Session = scoped_session(sessionmaker(bind=engine, autoflush=False))
 
 Base = declarative_base(bind=engine)
 Base.query = Session.query_property()
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)
@@ -89,7 +94,10 @@ class ClockwheelItem(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
 
     def __repr__(self):
-        return "<Clockwheel #%s item #%s: category #%s>" % (self.clockwheel_id, self.number, self.category_id)
+        return (
+            "<Clockwheel #%s item #%s: category #%s>"
+            % (self.clockwheel_id, self.number, self.category_id)
+        )
 
 
 class ClockwheelHour(Base):
@@ -99,7 +107,10 @@ class ClockwheelHour(Base):
     clockwheel_id = Column(Integer, ForeignKey("clockwheels.id"), nullable=False)
 
     def __repr__(self):
-        return "<Day #%s hour #%s: clockwheel #%s>" % (self.day, self.hour, self.clockwheel_id)
+        return (
+            "<Day #%s hour #%s: clockwheel #%s>"
+            % (self.day, self.hour, self.clockwheel_id)
+        )
 
 
 class WeeklyEvent(Base):
@@ -114,7 +125,10 @@ class WeeklyEvent(Base):
     filename = Column(Unicode(100), nullable=True)
 
     def __repr__(self):
-        return "<Event #%s: %s %s, %s, %s>" % (self.id, self.day, self.time, self.type, self.name)
+        return (
+            "<Event #%s: %s %s, %s, %s>"
+            % (self.id, self.day, self.time, self.type, self.name)
+        )
 
 
 class Play(Base):
@@ -127,10 +141,12 @@ class Play(Base):
     song_id = Column(Integer, ForeignKey("songs.id"), nullable=False)
 
 
-song_artists = Table("song_artists", Base.metadata,
+song_artists = Table(
+    "song_artists", Base.metadata,
     Column("song_id", Integer, ForeignKey("songs.id"), primary_key=True),
     Column("artist_id", Integer, ForeignKey("artists.id"), primary_key=True)
 )
+
 
 Song.category = relationship(Category, backref="songs")
 Song.artists = relationship("Artist", secondary=song_artists, backref="songs", order_by=Artist.name.asc())
@@ -142,21 +158,22 @@ ClockwheelHour.clockwheel = relationship(Clockwheel)
 
 Play.song = relationship(Song)
 
+
 def string_to_timedelta(input_string):
     split = input_string.split(":")
     # hh:mm:ss
-    if len(split)==3:
+    if len(split) == 3:
         td = timedelta(0, float(split[0])*3600 + float(split[1])*60 + float(split[2]))
     # mm:ss
-    elif len(split)==2:
+    elif len(split) == 2:
         td = timedelta(0, float(split[0])*60 + float(split[1]))
     # seconds only
-    elif len(split)==1:
+    elif len(split) == 1:
         td = timedelta(0, float(split[0]))
     # ???
     else:
         raise ValueError
     # Lengths can't be negative.
-    if td<timedelta(0):
+    if td < timedelta(0):
         raise ValueError
     return td

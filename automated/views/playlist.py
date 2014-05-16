@@ -31,7 +31,7 @@ def playlist(category_id=None):
 
 def new_category():
     if "name" not in request.form or request.form["name"]=="":
-        abort(400)
+        return "Please enter a name for the new category.", 400
     category = Category(name=request.form["name"])
     Session.add(category)
     Session.flush()

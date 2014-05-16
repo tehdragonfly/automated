@@ -1,8 +1,13 @@
 from datetime import timedelta
 
-from automated.helpers.schedule import get_clockwheel, pick_song, populate_cw_items
+from automated.helpers.schedule import (
+    get_clockwheel,
+    pick_song,
+    populate_cw_items,
+)
 
 TEN_MINUTES = timedelta(0, 600)
+
 
 def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
 
@@ -97,6 +102,7 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
         "can_lengthen": can_lengthen,
     }
 
+
 def shorten(songs, distance, error_margin):
     while distance > error_margin:
         for song in songs:
@@ -113,6 +119,7 @@ def shorten(songs, distance, error_margin):
             distance -= shorten_by
     return songs
 
+
 def lengthen(songs, distance, error_margin):
     while distance > error_margin:
         for song in songs:
@@ -128,4 +135,3 @@ def lengthen(songs, distance, error_margin):
             song[1] += lengthen_by
             distance -= lengthen_by
     return songs
-

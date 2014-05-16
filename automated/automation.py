@@ -15,6 +15,7 @@ from automated.helpers.schedule import (
     pick_song,
 )
 
+
 def play_queue():
     while redis.get("running") is not None:
         t = time.time()
@@ -22,7 +23,7 @@ def play_queue():
         play_items = redis.zrangebyscore("play_queue", t+4, t+5, withscores=True)
         for item_id, queue_time in play_items:
             item = redis.hgetall("item:"+item_id)
-            if len(item)==0:
+            if len(item) == 0:
                 redis.zrem("play_queue", item_id, item)
                 continue
             if item["status"] != "queued":
@@ -30,6 +31,7 @@ def play_queue():
             Thread(target=play_song, args=(queue_time, item_id, item)).start()
             redis.hset("item:"+item_id, "status", "preparing")
         time.sleep(0.01)
+
 
 def scheduler():
 
@@ -66,7 +68,7 @@ def scheduler():
                 second=next_event.time.second,
                 microsecond=next_event.time.microsecond,
             )
-            if target_time<next_time:
+            if target_time < next_time:
                 target_time += timedelta(1)
             print "TARGET TIME:", target_time
             target_length = target_time - next_time
@@ -152,7 +154,6 @@ def scheduler():
                 # Do whichever is closer.
                 print "NEITHER."
 
-
                 print "SHORTEN DISTANCE:", plan["distance"]
                 print "LENGTHEN DISTANCE:", plan["mls_distance"]
 
@@ -166,7 +167,6 @@ def scheduler():
                     songs = plan["songs"][:-1]
                     for song in songs:
                         song[1] = song[0].max_length
-
 
             for song, length in songs:
                 queue_song(next_time, song, length)
@@ -262,4 +262,3 @@ except:
 
 redis.delete("running")
 redis.delete("automation_pid")
-

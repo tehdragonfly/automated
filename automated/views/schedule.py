@@ -114,7 +114,7 @@ def clockwheel(clockwheel_id):
 
 def new_clockwheel():
     if "name" not in request.form or request.form["name"]=="":
-        abort(400)
+        return "Please enter a name for the new clockwheel.", 400
     clockwheel = Clockwheel(name=request.form["name"])
     Session.add(clockwheel)
     Session.flush()

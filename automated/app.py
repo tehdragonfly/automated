@@ -9,14 +9,17 @@ from automated.views import automation, schedule, playlist, log
 
 app = Flask(__name__)
 
+
 @app.after_request
 def shutdown_session(response=None):
     Session.commit()
     return response
 
+
 @app.teardown_request
 def shutdown_session(exception=None):
     Session.remove()
+
 
 # Automate
 
@@ -56,4 +59,3 @@ app.add_url_rule("/playlist/songs/<int:song_id>/edit", "edit_song", playlist.edi
 # Log
 
 app.add_url_rule("/log", "log", log.log, methods=("GET",))
-
