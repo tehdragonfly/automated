@@ -166,12 +166,16 @@ td:first-child {
 
 /* Clockwheels */
 
+#clockwheel_items li {
+	cursor: move;
+}
+
 #clockwheel_items form {
 	float: right;
 }
 
-#clockwheel_items li:last-child form {
-	float: none;
+#clockwheel_items + form {
+	margin-top: 10px;
 	text-align: center;
 }
 

@@ -21,6 +21,7 @@ def shutdown_session(exception=None):
 # Automate
 
 app.add_url_rule("/", "automation", automation.automation, methods=("GET",))
+app.add_url_rule("/update", "automation_update", automation.update, methods=("GET",))
 app.add_url_rule("/play", "automation_play", automation.play, methods=("POST",))
 app.add_url_rule("/stop", "automation_stop", automation.stop, methods=("POST",))
 app.add_url_rule("/stop_now", "automation_stop_now", automation.stop_now, methods=("POST",))
@@ -34,6 +35,7 @@ app.add_url_rule("/schedule/clockwheels/new", "new_clockwheel", schedule.new_clo
 app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>", "clockwheel", schedule.clockwheel, methods=("GET",))
 app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/add_item", "add_clockwheel_item", schedule.add_clockwheel_item, methods=("POST",))
 app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/remove_item", "remove_clockwheel_item", schedule.remove_clockwheel_item, methods=("POST",))
+app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/replace", "replace_clockwheel_items", schedule.replace_clockwheel_items, methods=("POST",))
 
 app.add_url_rule("/schedule/limits", "limits", schedule.limits, methods=("GET",))
 app.add_url_rule("/schedule/limits/save", "save_limits", schedule.save_limits, methods=("POST",))

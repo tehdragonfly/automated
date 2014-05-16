@@ -4,7 +4,7 @@
   <h2>{{current_clockwheel.name}}</h2>
   <ol id="clockwheel_items">
 {% for item in items: %}
-    <li>
+    <li class="category_{{item.category.id}}">
       <form action="{{url_for("remove_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
         <input type="hidden" name="number" value="{{item.number}}">
         <button type="submit">Remove</button>
@@ -12,7 +12,7 @@
       <a href="{{url_for("playlist", category_id=item.category.id)}}">{{item.category.name}}</a>
     </li>
 {% endfor %}
-    <li>
+  </ol>
       <form action="{{url_for("add_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
         Add item: <select name="category_id">
 {% for category in all_categories: %}
@@ -21,7 +21,23 @@
         </select>
         <button type="submit">Add</button>
       </form>
-    </li>
-  </ol>
 </div>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
+<script>
+
+$("#clockwheel_items").sortable({
+	containment: "parent",
+	cursor: "move",
+	stop: function() {
+		var categories = [];
+		var items = $("#clockwheel_items li");
+		for (i=0; i<items.length; i++) {
+			categories.push(items[i].className.substring(9));
+		}
+		$.post(location.href+"/replace", { "categories": categories.toString() });
+	},
+});
+
+</script>
 {% endblock %}

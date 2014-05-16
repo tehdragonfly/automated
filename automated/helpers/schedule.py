@@ -41,7 +41,7 @@ def find_event(range_start):
                 WeeklyEvent.time<=range_end.time(),
             ),
         ))
-    event_query.order_by(WeeklyEvent.day, WeeklyEvent.time)
+    event_query = event_query.order_by(WeeklyEvent.day, WeeklyEvent.time)
     return event_query.first()
 
 

@@ -26,7 +26,6 @@ def play_song(queue_time, item_id, item):
     play_time = queue_time - float(item.get("start", 0))
     time.sleep(play_time - time.time())
 
-    redis.hset("item:"+item_id, "status", "playing")
     if item["type"] == "song":
         Session.add(Play(
             time=datetime.now(),
@@ -34,9 +33,19 @@ def play_song(queue_time, item_id, item):
             length=timedelta(0, float(item["length"]))
         ))
         Session.commit()
+    elif item["type"] == "stop":
+        redis.hset("item:"+item_id, "status", "played")
+        redis.publish("update", "update")
+        redis.delete("running")
+        redis.delete("automation_pid")
+        return
+
+    redis.hset("item:"+item_id, "status", "playing")
+    redis.publish("update", "update")
 
     subprocess.call([PLAYER, "-nodisp", "-autoexit", filename], stdout=FNULL, stderr=FNULL)
     redis.hset("item:"+item_id, "status", "played")
+    redis.publish("update", "update")
 
     if redis.get("running") is None:
         redis.delete("automation_pid")
@@ -66,9 +75,10 @@ def queue_event(queue_time, event):
         "status": "queued",
         "type": event.type,
         "event_id": event.id,
-        "length": event.length.total_seconds(),
         "filename": event.filename,
     }
+    if event.length is not None:
+        item_info["length"] = event.length.total_seconds()
     redis.hmset("item:"+queue_item_id, item_info)
     redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
 

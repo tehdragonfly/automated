@@ -173,6 +173,9 @@ def scheduler():
                 next_time += length
 
             queue_event(next_time, next_event)
+            if next_event.type == "stop":
+                break
+
             next_time += next_event.length
 
         else:
@@ -212,6 +215,7 @@ def scheduler():
             next_time-datetime.now() > timedelta(0, 1800)
             and redis.get("running") is not None
         ):
+            redis.publish("update", "update")
             print "SLEEPING"
             time.sleep(300)
 
@@ -246,13 +250,16 @@ for item_id in future_items:
 
 redis.set("running", "True")
 
-Thread(target=play_queue).start()
+pq = Thread(target=play_queue)
+pq.start()
 
 try:
     scheduler()
+    pq.join()
 except:
     redis.delete("running")
     raise
 
+redis.delete("running")
 redis.delete("automation_pid")
 

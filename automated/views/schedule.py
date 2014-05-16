@@ -143,6 +143,33 @@ def remove_clockwheel_item(clockwheel_id):
     )).delete()
     return redirect(url_for("clockwheel", clockwheel_id=clockwheel_id))
 
+def replace_clockwheel_items(clockwheel_id):
+    try:
+        clockwheel = Session.query(Clockwheel).filter(Clockwheel.id==clockwheel_id).one()
+    except NoResultFound:
+        abort(404)
+    try:
+        ids = [int(_) for _ in request.form["categories"].split(",")]
+    except ValueError:
+        abort(400)
+    try:
+        categories = [
+            Session.query(Category).filter(Category.id==category_id).one()
+            for category_id in ids
+        ]
+    except NoResultFound:
+        abort(404)
+    Session.query(ClockwheelItem).filter(
+        ClockwheelItem.clockwheel==clockwheel,
+    ).delete()
+    for number, category in enumerate(categories, 1):
+        Session.add(ClockwheelItem(
+            clockwheel=clockwheel,
+            number=number,
+            category=category,
+        ))
+    return "", 204
+
 # Limits
 
 def limits():

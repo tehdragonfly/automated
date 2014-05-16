@@ -48,6 +48,29 @@ Category: {{db_item.category.name}}
 <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
 <script>
 
+var pq = $("#item_panel ol");
+
+function update_pq() {
+	$.get("/update", {}, function(r) {
+		pq.empty();
+		for (i=0; i<r.play_queue.length; i++) {
+			var item = r.play_queue[i];
+			var li = $("<li>").addClass(item.status);
+			$("<div>").addClass("item_time").text(item.time).appendTo(li);
+			if (item.length) {
+				$("<div>").addClass("item_duration").text(item.length).appendTo(li);
+			}
+			var info = $("<div>").addClass("item_info").text(item.name).appendTo(li);
+			$("<div>").addClass("item_artist").text(item.artist).appendTo(info);
+			li.appendTo(pq);
+		}
+	}).complete(function() {
+		window.setTimeout(update_pq, 50);
+	});
+}
+
+update_pq();
+
 </script>
 
 {% endblock %}
