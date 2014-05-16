@@ -2,6 +2,7 @@ from datetime import timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import backref, relationship, scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.schema import Index
 from sqlalchemy import (
     Table,
     Column,
@@ -157,6 +158,9 @@ ClockwheelItem.category = relationship(Category)
 ClockwheelHour.clockwheel = relationship(Clockwheel)
 
 Play.song = relationship(Song)
+
+
+Index("play_time", Play.time)
 
 
 def string_to_timedelta(input_string):
