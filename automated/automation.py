@@ -172,6 +172,10 @@ def scheduler():
                 queue_song(next_time, song, length)
                 next_time += length
 
+            # Set current clockwheel to match the end of the plan.
+            cw = plan["cw"]
+            cw_items = plan["cw_items"]
+
             queue_event(next_time, next_event)
             if next_event.type == "stop":
                 break
