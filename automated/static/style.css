@@ -12,6 +12,10 @@ a:hover {
 	text-decoration: none;
 }
 
+.clear {
+	clear: both;
+}
+
 header {
 	position: fixed:
 	top: 0;
@@ -106,6 +110,12 @@ header .active {
 	margin: 0;
 }
 
+.item_time {
+	float: left;
+	margin-right: 5px;
+	color: #444;
+}
+
 .item_duration {
 	float: right;
 	margin-left: 5px;
@@ -113,17 +123,8 @@ header .active {
 	text-align: right;
 }
 
-.item_time, .item_info {
-	display: inline-block;
-	vertical-align: top;
-}
-
-.item_time {
-	margin-right: 5px;
-	color: #444;
-}
-
 .item_info {
+	overflow: hidden;
 }
 
 input {
