@@ -40,13 +40,12 @@ def log():
     if "format" in request.values and request.values["format"]=="csv":
         with tempfile.TemporaryFile("w+b") as f:
             csv = writer(f, dialect="excel")
-            csv.writerow(("time", "title", "artist", "album"))
+            csv.writerow(("time", "title", "artist"))
             for play in plays:
                 csv.writerow((
                     play.time.strftime("%H:%M:%S"),
                     play.song.name,
                     ", ".join(_.name for _ in play.song.artists),
-                    play.song.album or "",
                 ))
             f.seek(0)
             response = make_response(f.read())

@@ -38,14 +38,13 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
         for song, length in songs:
             for artist in song.artists:
                 attempt_artists.add(artist.id)
-        attempt_albums = set(_[0].album for _ in songs if _[0].album is not None)
 
         if cw is None or len(cw_items) == 0:
 
             # If there isn't a clockwheel, just pick any song.
             song = pick_song(
                 next_time,
-                songs=attempt_songs, artists=attempt_artists, albums=attempt_albums,
+                songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
             )
 
@@ -55,7 +54,7 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
             item, category = cw_items.pop(0)
             song = pick_song(
                 next_time, category.id,
-                songs=attempt_songs, artists=attempt_artists, albums=attempt_albums,
+                songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
             )
 

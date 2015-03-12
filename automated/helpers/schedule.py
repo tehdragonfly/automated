@@ -63,7 +63,7 @@ def populate_cw_items(cw):
     ).order_by(ClockwheelItem.number).all() if cw is not None else []
 
 
-def pick_song(queue_time, category_id=None, songs=None, artists=None, albums=None, length=None):
+def pick_song(queue_time, category_id=None, songs=None, artists=None, length=None):
 
     song_query = Session.query(Song).order_by(func.random())
 
@@ -91,17 +91,6 @@ def pick_song(queue_time, category_id=None, songs=None, artists=None, albums=Non
         artists = artists | redis.smembers("item:"+item_id+":artists")
     if len(artists) != 0:
         song_query = song_query.filter(~Song.artists.any(Artist.id.in_(artists)))
-
-    # Album limit
-    album_timestamp = queue_timestamp - float(redis.get("album_limit"))
-    if albums is None:
-        albums = set()
-    for item_id in redis.zrangebyscore("play_queue", album_timestamp, queue_timestamp):
-        album = redis.hget("item:"+item_id, "album")
-        if album is not None:
-            albums.add(album)
-    if len(albums) != 0:
-        song_query = song_query.filter(~Song.album.in_(albums))
 
     if length is not None:
         length_song = song_query.filter(and_(

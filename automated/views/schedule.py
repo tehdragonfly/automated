@@ -180,7 +180,6 @@ def limits():
         all_clockwheels=all_clockwheels,
         song_limit=timedelta(0, float(redis.get("song_limit") or 0)),
         artist_limit=timedelta(0, float(redis.get("artist_limit") or 0)),
-        album_limit=timedelta(0, float(redis.get("album_limit") or 0)),
     )
 
 def save_limits():
@@ -192,10 +191,6 @@ def save_limits():
         redis.set(
             "artist_limit",
             string_to_timedelta(request.form["artist_limit"]).total_seconds(),
-        )
-        redis.set(
-            "album_limit",
-            string_to_timedelta(request.form["album_limit"]).total_seconds(),
         )
     except ValueError:
         return "Please enter a time in the form hh:mm:ss.", 400

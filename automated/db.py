@@ -38,7 +38,6 @@ class Song(Base):
     id = Column(Integer, primary_key=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     name = Column(Unicode(50), nullable=False)
-    album = Column(Unicode(50), nullable=True)
     start = Column(Interval, nullable=False, default=timedelta(0))
     end = Column(Interval, nullable=False)
     min_end = Column(Interval, nullable=False)

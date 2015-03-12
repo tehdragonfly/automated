@@ -9,7 +9,6 @@
       </div>
       <div class="item_info">{{song.name}}
         <div class="item_artist">
-{% if song.album: %}Album: {{song.album}}, {% endif %}
 {% if song.artists: %}Artist: {% for artist in song.artists %}{{artist.name}}, {% endfor %}{% endif %}
 Category: {{song.category.name}}
         </div>
@@ -21,7 +20,7 @@ Category: {{song.category.name}}
       <form action="{{url_for("new_song")}}" method="post" enctype="multipart/form-data">
         <div class="item_duration"><input type="text" name="length" size="5" placeholder="mm:ss" style="text-align: right"></div>
         <div class="item_info"><input type="text" name="title" placeholder="Title...">
-          <div class="item_artist"><input type="text" name="album" placeholder="Album..."><input type="text" name="artist" placeholder="Artist...">{% if current_category==None %}<select name="category_id">
+          <div class="item_artist"><input type="text" name="artist" placeholder="Artist...">{% if current_category==None %}<select name="category_id">
 {% for category in all_categories: %}
             <option value="{{category.id}}">{{category.name}}</option>
 {% endfor %}

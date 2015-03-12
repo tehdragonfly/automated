@@ -46,7 +46,6 @@ def scheduler():
         longest_limit = max(
             float(redis.get("song_limit")),
             float(redis.get("artist_limit")),
-            float(redis.get("album_limit")),
         )
         old_items = redis.zrangebyscore("play_queue", 0, time.time() - longest_limit)
         for item_id in old_items:
@@ -243,8 +242,6 @@ if redis.get("song_limit") is None:
     redis.set("song_limit", 3600)
 if redis.get("artist_limit") is None:
     redis.set("artist_limit", 3600)
-if redis.get("album_limit") is None:
-    redis.set("album_limit", 3600)
 
 # Make sure any existing future items are cleared.
 future_items = redis.zrangebyscore("play_queue", time.time(), "inf")

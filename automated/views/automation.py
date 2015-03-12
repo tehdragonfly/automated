@@ -64,8 +64,6 @@ def update():
             ).one()
             item_dict["name"] = song.name
             item_dict["artist"] = ""
-            if song.album is not None:
-                item_dict["artist"] += "Album: " + song.album + ", "
             if song.artists:
                 item_dict["artist"] += "Artist: "
                 for artist in song.artists:

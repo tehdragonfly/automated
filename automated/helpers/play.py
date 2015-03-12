@@ -68,8 +68,6 @@ def queue_song(queue_time, song, force_length=None):
         "normal_length": song.length.total_seconds(),
         "filename": song.filename,
     }
-    if song.album is not None:
-        item_info["album"] = song.album
     redis.hmset("item:"+queue_item_id, item_info)
     redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
     redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)

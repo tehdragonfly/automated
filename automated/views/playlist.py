@@ -69,12 +69,6 @@ def edit_song(song_id):
         return "Please enter a title.", 400
     song.name = name
 
-    album = request.form["album"].strip()
-    if len(album)==0:
-        song.album = None
-    else:
-        song.album = album
-
     del song.artists[:]
     artists = [_.strip() for _ in request.form["artist"].split(",")]
     for artist_name in artists:
@@ -147,11 +141,6 @@ def new_song():
     if len(name)==0:
         return "Please enter a title.", 400
 
-
-    album = request.form["album"].strip()
-    if len(album)==0:
-        album = None
-
     song_file = request.files["file"]
     try:
         segment = AudioSegment.from_file(song_file)
@@ -175,7 +164,6 @@ def new_song():
 
     song = Song(
         name=request.form["title"],
-        album=album,
         category=category,
         end=length,
         min_end=length,

@@ -12,7 +12,6 @@
       <div class="item_info">{{db_item.name}}
         <div class="item_artist">
 {% if queue_item.type=="song": %}
-{% if db_item.album: %}Album: {{db_item.album}}, {% endif %}
 {% if db_item.artists: %}Artist: {% for artist in db_item.artists %}{{artist.name}}, {% endfor %}{% endif %}
 Category: {{db_item.category.name}}
 {% else: %}
