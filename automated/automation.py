@@ -19,8 +19,8 @@ from automated.helpers.schedule import (
 def play_queue():
     while redis.get("running") is not None:
         t = time.time()
-        # Cue things up 5 seconds ahead.
-        play_items = redis.zrangebyscore("play_queue", t+4, t+5, withscores=True)
+        # Cue things up 10 seconds ahead.
+        play_items = redis.zrangebyscore("play_queue", t, t+10, withscores=True)
         for item_id, queue_time in play_items:
             item = redis.hgetall("item:"+item_id)
             if len(item) == 0:
@@ -35,7 +35,7 @@ def play_queue():
 
 def scheduler():
 
-    next_time = datetime.fromtimestamp(round(time.time()+6))
+    next_time = datetime.fromtimestamp(round(time.time()+10))
     next_event = find_event(next_time)
     cw = get_clockwheel(next_time)
     cw_items = populate_cw_items(cw)
