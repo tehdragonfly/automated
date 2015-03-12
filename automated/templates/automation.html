@@ -1,26 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<nav id="topbar">
-  <ul>
-    <li>
-      <form action="{{url_for("automation_play")}}" method="post">
-        <button id="play_button"{% if alive: %} disabled="disabled"{% endif %}>Play</button>
-      </form>
-    </li>
-    <li>
-      <form action="{{url_for("automation_stop")}}" method="post">
-        <button id="stop_button"{% if not running: %} disabled="disabled"{% endif %}>Stop</button>
-      </form>
-    </li>
-    <li>
-      <form action="{{url_for("automation_stop_now")}}" method="post">
-        <button id="stop_now_button"{% if not alive: %} disabled="disabled"{% endif %}>Stop now</button>
-      </form>
-    </li>
-  </ul>
-</nav>
-
 <div id="item_panel">
   <ol>
 {% for play_time, queue_item, db_item in play_queue: %}

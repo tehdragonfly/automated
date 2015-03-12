@@ -61,7 +61,10 @@ def queue_song(queue_time, song, force_length=None):
         "type": "song",
         "song_id": song.id,
         "start": song.start.total_seconds(),
-        "length": force_length.total_seconds() or song.length.total_seconds(),
+        "length": (
+            force_length.total_seconds() if force_length is not None
+            else song.length.total_seconds()
+        ),
         "normal_length": song.length.total_seconds(),
         "filename": song.filename,
     }

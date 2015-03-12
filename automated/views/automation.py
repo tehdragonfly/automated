@@ -1,5 +1,3 @@
-import os
-import subprocess
 import time
 
 from datetime import datetime, timedelta
@@ -81,45 +79,4 @@ def update():
             item_dict["artist"] = event.type + " event"
         play_queue.append(item_dict)
     return jsonify({ "play_queue": play_queue })
-
-
-def play():
-    if redis.get("automation_pid") is not None:
-        return redirect("/")
-    process = subprocess.Popen(["python", "automation.py"], preexec_fn=os.setpgrp)
-    redis.set("automation_pid", process.pid)
-    return redirect("/")
-
-
-def stop():
-    redis.delete("running")
-    # Make sure any existing future items are cleared.
-    future_items = redis.zrangebyscore("play_queue", time.time(), "inf")
-    for item_id in future_items:
-        redis.zrem("play_queue", item_id)
-        redis.delete("item:"+item_id)
-    return redirect("/")
-
-
-def stop_now():
-    try:
-        pid = int(redis.get("automation_pid"))
-    except ValueError:
-        return redirect("/")
-    redis.delete("running")
-    past_items = redis.zrangebyscore("play_queue", "-inf", time.time())
-    for item_id in past_items:
-        redis.hset("item:"+item_id, "status", "played")
-    # Make sure any existing future items are cleared.
-    future_items = redis.zrangebyscore("play_queue", time.time(), "inf")
-    for item_id in future_items:
-        redis.zrem("play_queue", item_id)
-        redis.delete("item:"+item_id)
-    try:
-        os.killpg(pid, 15)
-    except OSError:
-        pass
-    redis.delete("automation_pid")
-    return redirect("/")
-    
 
