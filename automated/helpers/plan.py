@@ -1,15 +1,15 @@
 from datetime import timedelta
 
 from automated.helpers.schedule import (
-    get_clockwheel,
+    get_sequence,
     pick_song,
-    populate_cw_items,
+    populate_sequence_items,
 )
 
 TEN_MINUTES = timedelta(0, 600)
 
 
-def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
+def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items):
 
     min_target_length = target_length - error_margin
     max_target_length = target_length + error_margin
@@ -19,7 +19,7 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
     attempt_max_length = timedelta(0)
 
     # Clone this so we don't alter the original.
-    cw_items = list(cw_items)
+    sequence_items = list(sequence_items)
 
     songs = []
 
@@ -39,9 +39,9 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
             for artist in song.artists:
                 attempt_artists.add(artist.id)
 
-        if cw is None or len(cw_items) == 0:
+        if sequence is None or len(sequence_items) == 0:
 
-            # If there isn't a clockwheel, just pick any song.
+            # If there isn't a sequence, just pick any song.
             song = pick_song(
                 next_time,
                 songs=attempt_songs, artists=attempt_artists,
@@ -50,8 +50,8 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
 
         else:
 
-            # Otherwise pick songs from the clockwheel.
-            item, category = cw_items.pop(0)
+            # Otherwise pick songs from the sequence.
+            item, category = sequence_items.pop(0)
             song = pick_song(
                 next_time, category.id,
                 songs=attempt_songs, artists=attempt_artists,
@@ -72,20 +72,20 @@ def plan_attempt(target_length, error_margin, next_time, cw, cw_items):
 
         next_time += song.length
 
-        # Check if we need a new clockwheel
+        # Check if we need a new sequence
         # or if the item list needs repopulating.
-        new_cw = get_clockwheel(next_time)
-        if new_cw != cw or len(cw_items) == 0:
-            cw = get_clockwheel(next_time)
-            cw_items = populate_cw_items(cw)
+        new_sequence = get_sequence(next_time)
+        if new_sequence != sequence or len(sequence_items) == 0:
+            sequence = new_sequence
+            sequence_items = populate_sequence_items(sequence)
 
     can_shorten = attempt_min_length <= max_target_length
     can_lengthen = attempt_max_length - songs[-1][0].max_length >= min_target_length
 
     return {
         "songs": songs,
-        "cw": cw,
-        "cw_items": cw_items,
+        "sequence": sequence,
+        "sequence_items": sequence_items,
         # Full lengths
         "length": attempt_length,
         "min_length": attempt_min_length,

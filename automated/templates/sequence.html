@@ -1,11 +1,11 @@
 {% extends "base_schedule.html" %}
 {% block subcontent %}
 <div id="item_panel">
-  <h2>{{current_clockwheel.name}}</h2>
-  <ol id="clockwheel_items">
+  <h2>{{current_sequence.name}}</h2>
+  <ol id="sequence_items">
 {% for item in items: %}
     <li class="category_{{item.category.id}}">
-      <form action="{{url_for("remove_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
+      <form action="{{url_for("remove_sequence_item", sequence_id=current_sequence.id)}}" method="post">
         <input type="hidden" name="number" value="{{item.number}}">
         <button type="submit">Remove</button>
       </form>
@@ -13,7 +13,7 @@
     </li>
 {% endfor %}
   </ol>
-      <form action="{{url_for("add_clockwheel_item", clockwheel_id=current_clockwheel.id)}}" method="post">
+      <form action="{{url_for("add_sequence_item", sequence_id=current_sequence.id)}}" method="post">
         Add item: <select name="category_id">
 {% for category in all_categories: %}
           <option value="{{category.id}}">{{category.name}}</option>
@@ -26,12 +26,12 @@
 <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
 <script>
 
-$("#clockwheel_items").sortable({
+$("#sequence_items").sortable({
 	containment: "parent",
 	cursor: "move",
 	stop: function() {
 		var categories = [];
-		var items = $("#clockwheel_items li");
+		var items = $("#sequence_items li");
 		for (i=0; i<items.length; i++) {
 			categories.push(items[i].className.substring(9));
 		}

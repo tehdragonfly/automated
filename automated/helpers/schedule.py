@@ -9,9 +9,9 @@ from automated.db import (
     Session,
     Artist,
     Category,
-    Clockwheel,
-    ClockwheelHour,
-    ClockwheelItem,
+    ScheduleHour,
+    Sequence,
+    SequenceItem,
     Song,
     WeeklyEvent,
 )
@@ -45,22 +45,22 @@ def find_event(range_start):
     return event_query.first()
 
 
-def get_clockwheel(target_time):
+def get_sequence(target_time):
     if target_time is None:
         target_time = datetime.now()
     try:
-        return Session.query(Clockwheel).join(ClockwheelHour).filter(and_(
-            ClockwheelHour.day == target_time.weekday(),
-            ClockwheelHour.hour == target_time.hour,
+        return Session.query(Sequence).join(ScheduleHour).filter(and_(
+            ScheduleHour.day == target_time.weekday(),
+            ScheduleHour.hour == target_time.hour,
         )).one()
     except NoResultFound:
         return None
 
 
-def populate_cw_items(cw):
-    return Session.query(ClockwheelItem, Category).join(Category).filter(
-        ClockwheelItem.clockwheel == cw
-    ).order_by(ClockwheelItem.number).all() if cw is not None else []
+def populate_sequence_items(sequence):
+    return Session.query(SequenceItem, Category).join(Category).filter(
+        SequenceItem.sequence == sequence
+    ).order_by(SequenceItem.number).all() if sequence is not None else []
 
 
 def pick_song(queue_time, category_id=None, songs=None, artists=None, length=None):

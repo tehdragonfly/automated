@@ -78,38 +78,38 @@ class Artist(Base):
         return "<Artist #%s: %s>" % (self.id, self.name)
 
 
-class Clockwheel(Base):
-    __tablename__ = "clockwheels"
+class Sequence(Base):
+    __tablename__ = "sequences"
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(50), nullable=False)
 
     def __repr__(self):
-        return "<Clockwheel #%s: %s>" % (self.id, self.name)
+        return "<Sequence #%s: %s>" % (self.id, self.name)
 
 
-class ClockwheelItem(Base):
-    __tablename__ = "clockwheel_items"
-    clockwheel_id = Column(Integer, ForeignKey("clockwheels.id"), primary_key=True)
+class SequenceItem(Base):
+    __tablename__ = "sequence_items"
+    sequence_id = Column(Integer, ForeignKey("sequences.id"), primary_key=True)
     number = Column(Integer, primary_key=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
 
     def __repr__(self):
         return (
-            "<Clockwheel #%s item #%s: category #%s>"
-            % (self.clockwheel_id, self.number, self.category_id)
+            "<Sequence #%s item #%s: category #%s>"
+            % (self.sequence_id, self.number, self.category_id)
         )
 
 
-class ClockwheelHour(Base):
-    __tablename__ = "clockwheel_hours"
+class ScheduleHour(Base):
+    __tablename__ = "schedule_hours"
     day = Column(Integer, primary_key=True)
     hour = Column(Integer, primary_key=True)
-    clockwheel_id = Column(Integer, ForeignKey("clockwheels.id"), nullable=False)
+    sequence_id = Column(Integer, ForeignKey("sequences.id"), nullable=False)
 
     def __repr__(self):
         return (
-            "<Day #%s hour #%s: clockwheel #%s>"
-            % (self.day, self.hour, self.clockwheel_id)
+            "<Day #%s hour #%s: sequence #%s>"
+            % (self.day, self.hour, self.sequence_id)
         )
 
 
@@ -150,10 +150,10 @@ song_artists = Table(
 Song.category = relationship(Category, backref="songs")
 Song.artists = relationship("Artist", secondary=song_artists, backref="songs", order_by=Artist.name.asc())
 
-Clockwheel.items = relationship(ClockwheelItem, backref="clockwheel", order_by=ClockwheelItem.number.asc())
-ClockwheelItem.category = relationship(Category)
+Sequence.items = relationship(SequenceItem, backref="sequence", order_by=SequenceItem.number.asc())
+SequenceItem.category = relationship(Category)
 
-ClockwheelHour.clockwheel = relationship(Clockwheel)
+ScheduleHour.sequence = relationship(Sequence)
 
 Play.song = relationship(Song)
 

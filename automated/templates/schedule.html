@@ -2,10 +2,10 @@
 {% block subcontent %}
 <div id="item_panel">
   <form id="edit_schedule" action="{{url_for("edit_schedule")}}" method="post">
-    <p>Edit schedule: <select name="clockwheel_id">
+    <p>Edit schedule: <select name="sequence_id">
       <option value="">Empty</option>
-{% for clockwheel in all_clockwheels: %}
-      <option value="{{clockwheel.id}}">{{clockwheel.name}}</option>
+{% for sequence in all_sequences: %}
+      <option value="{{sequence.id}}">{{sequence.name}}</option>
 {% endfor %}
     </select> on <select name="day">
       <option value="0">Monday</option>
@@ -45,9 +45,9 @@
         <td>{{hour}}:00</td>
 {% for cell in schedule_table[hour] %}
 {% if cell[0]!=None %}
-        <td rowspan="{{cell[1]}}" class="clockwheel{{cell[0].id}}"><a href="{{url_for("clockwheel", clockwheel_id=cell[0].id)}}">{{cell[0].name}}</a></td>
+        <td rowspan="{{cell[1]}}" class="sequence{{cell[0].id}}"><a href="{{url_for("sequence", sequence_id=cell[0].id)}}">{{cell[0].name}}</a></td>
 {% else %}
-        <td rowspan="{{cell[1]}}" class="no_clockwheel">Empty</td>
+        <td rowspan="{{cell[1]}}" class="no_sequence">Empty</td>
 {% endif %}
 {% endfor %}
       </tr>

@@ -17,14 +17,14 @@
 {% else %}
     <li><a href="{{url_for("limits")}}">Repetition limits</a></li>
 {% endif %}
-{% for clockwheel in all_clockwheels: %}
-{% if clockwheel==current_clockwheel %}
-    <li><strong>{{clockwheel.name}}</strong></li>
+{% for sequence in all_sequences: %}
+{% if sequence==current_sequence %}
+    <li><strong>{{sequence.name}}</strong></li>
 {% else %}
-    <li><a href="{{url_for("clockwheel", clockwheel_id=clockwheel.id)}}">{{clockwheel.name}}</a></li>
+    <li><a href="{{url_for("sequence", sequence_id=sequence.id)}}">{{sequence.name}}</a></li>
 {% endif %}
 {% endfor %}
-    <li><form action="{{url_for("new_clockwheel")}}" method="post"><input id="new_clockwheel_name" type="text" name="name" placeholder="+ New clockwheel"></form></li>
+    <li><form action="{{url_for("new_sequence")}}" method="post"><input id="new_sequence_name" type="text" name="name" placeholder="+ New sequence"></form></li>
   </ul>
 </nav>
 

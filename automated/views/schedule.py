@@ -11,9 +11,9 @@ from werkzeug import secure_filename
 from automated.db import (
     Session,
     Category,
-    Clockwheel,
-    ClockwheelHour,
-    ClockwheelItem,
+    ScheduleHour,
+    Sequence,
+    SequenceItem,
     Song,
     WeeklyEvent,
     string_to_timedelta,
@@ -21,17 +21,17 @@ from automated.db import (
 
 redis = StrictRedis()
 
-# Clockwheel schedule
+# Sequence schedule
 
 def schedule():
 
-    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+    all_sequences = Session.query(Sequence).order_by(Sequence.name).all()
 
-    clockwheel_hours = Session.query(ClockwheelHour).options(joinedload(ClockwheelHour.clockwheel))
+    schedule_hours = Session.query(ScheduleHour).options(joinedload(ScheduleHour.sequence))
 
     schedule = defaultdict(lambda: defaultdict(lambda: None))
-    for ch in clockwheel_hours:
-        schedule[ch.day][ch.hour] = ch.clockwheel
+    for sh in schedule_hours:
+        schedule[sh.day][sh.hour] = sh.sequence
 
     schedule_table = defaultdict(lambda: [])
     for day in range(7):
@@ -49,8 +49,8 @@ def schedule():
         "schedule.html",
         section="schedule",
         page="schedule",
-        all_clockwheels=all_clockwheels,
-        current_clockwheel=None,
+        all_sequences=all_sequences,
+        current_sequence=None,
         schedule_table=schedule_table,
     )
 
@@ -67,84 +67,84 @@ def edit_schedule():
     if len(schedule_range)==0:
         return "", 204
 
-    Session.query(ClockwheelHour).filter(and_(
-        ClockwheelHour.day==day,
-        ClockwheelHour.hour>=start_hour,
-        ClockwheelHour.hour<end_hour,
+    Session.query(ScheduleHour).filter(and_(
+        ScheduleHour.day==day,
+        ScheduleHour.hour>=start_hour,
+        ScheduleHour.hour<end_hour,
     )).delete()
 
     try:
-        clockwheel = Session.query(Clockwheel).filter(
-            Clockwheel.id==int(request.form["clockwheel_id"])
+        sequence = Session.query(Sequence).filter(
+            Sequence.id==int(request.form["sequence_id"])
         ).one()
     except (KeyError, ValueError, NoResultFound):
         return redirect(url_for("schedule"))
 
     for hour in schedule_range:
-        Session.add(ClockwheelHour(day=day, hour=hour, clockwheel_id=clockwheel.id))
+        Session.add(ScheduleHour(day=day, hour=hour, sequence_id=sequence.id))
 
     return redirect(url_for("schedule"))
 
-# Clockwheels
+# Sequences
 
-def clockwheel(clockwheel_id):
+def sequence(sequence_id):
 
-    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+    all_sequences = Session.query(Sequence).order_by(Sequence.name).all()
 
     try:
-        clockwheel = Session.query(Clockwheel).filter(Clockwheel.id==clockwheel_id).one()
+        sequence = Session.query(Sequence).filter(Sequence.id==sequence_id).one()
     except NoResultFound:
         abort(404)
 
-    items = Session.query(ClockwheelItem).filter(
-        ClockwheelItem.clockwheel_id==clockwheel.id
-    ).order_by(ClockwheelItem.number).options(joinedload(ClockwheelItem.category)).all()
+    items = Session.query(SequenceItem).filter(
+        SequenceItem.sequence_id==sequence.id
+    ).order_by(SequenceItem.number).options(joinedload(SequenceItem.category)).all()
 
     all_categories = Session.query(Category).order_by(Category.name).all()
 
     return render_template(
-        "clockwheel.html",
+        "sequence.html",
         section="schedule",
-        all_clockwheels=all_clockwheels,
-        current_clockwheel=clockwheel,
+        all_sequences=all_sequences,
+        current_sequence=sequence,
         items=items,
         all_categories=all_categories,
     )
 
-def new_clockwheel():
+def new_sequence():
     if "name" not in request.form or request.form["name"]=="":
-        return "Please enter a name for the new clockwheel.", 400
-    clockwheel = Clockwheel(name=request.form["name"])
-    Session.add(clockwheel)
+        return "Please enter a name for the new sequence.", 400
+    sequence = Sequence(name=request.form["name"])
+    Session.add(sequence)
     Session.flush()
-    return redirect(url_for("clockwheel", clockwheel_id=clockwheel.id))
+    return redirect(url_for("sequence", sequence_id=sequence.id))
 
-def add_clockwheel_item(clockwheel_id):
+def add_sequence_item(sequence_id):
     try:
-        clockwheel = Session.query(Clockwheel).filter(Clockwheel.id==clockwheel_id).one()
+        sequence = Session.query(Sequence).filter(Sequence.id==sequence_id).one()
         category = Session.query(Category).filter(Category.id==int(request.form["category_id"])).one()
     except (ValueError, NoResultFound):
         abort(404)
-    items = Session.query(ClockwheelItem).filter(
-        ClockwheelItem.clockwheel==clockwheel
-    ).order_by(ClockwheelItem.number).all()
-    Session.add(ClockwheelItem(
-        clockwheel=clockwheel,
+    items = Session.query(SequenceItem).filter(
+        SequenceItem.sequence==sequence
+    ).order_by(SequenceItem.number).all()
+    Session.add(SequenceItem(
+        sequence=sequence,
         number=items[-1].number+1 if len(items)!=0 else 1,
         category=category,
     ))
-    return redirect(url_for("clockwheel", clockwheel_id=clockwheel.id))
+    return redirect(url_for("sequence", sequence_id=sequence.id))
 
-def remove_clockwheel_item(clockwheel_id):
-    Session.query(ClockwheelItem).filter(and_(
-        ClockwheelItem.clockwheel_id==clockwheel_id,
-        ClockwheelItem.number==int(request.form["number"]),
+def remove_sequence_item(sequence_id):
+    Session.query(SequenceItem).filter(and_(
+        SequenceItem.sequence_id==sequence_id,
+        SequenceItem.number==int(request.form["number"]),
     )).delete()
-    return redirect(url_for("clockwheel", clockwheel_id=clockwheel_id))
+    return redirect(url_for("sequence", sequence_id=sequence_id))
 
-def replace_clockwheel_items(clockwheel_id):
+def replace_sequence_items(sequence_id):
     try:
-        clockwheel = Session.query(Clockwheel).filter(Clockwheel.id==clockwheel_id).one()
+        sequence = Session.query(Sequence).filter(Sequence.id==sequence_id).one()
     except NoResultFound:
         abort(404)
     try:
@@ -158,12 +158,12 @@ def replace_clockwheel_items(clockwheel_id):
         ]
     except NoResultFound:
         abort(404)
-    Session.query(ClockwheelItem).filter(
-        ClockwheelItem.clockwheel==clockwheel,
+    Session.query(SequenceItem).filter(
+        SequenceItem.sequence==sequence,
     ).delete()
     for number, category in enumerate(categories, 1):
-        Session.add(ClockwheelItem(
-            clockwheel=clockwheel,
+        Session.add(SequenceItem(
+            sequence=sequence,
             number=number,
             category=category,
         ))
@@ -172,12 +172,12 @@ def replace_clockwheel_items(clockwheel_id):
 # Limits
 
 def limits():
-    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+    all_sequences = Session.query(Sequence).order_by(Sequence.name).all()
     return render_template(
         "limits.html",
         section="schedule",
         page="limits",
-        all_clockwheels=all_clockwheels,
+        all_sequences=all_sequences,
         song_limit=timedelta(0, float(redis.get("song_limit") or 0)),
         artist_limit=timedelta(0, float(redis.get("artist_limit") or 0)),
     )
@@ -200,7 +200,7 @@ def save_limits():
 
 def event_list():
 
-    all_clockwheels = Session.query(Clockwheel).order_by(Clockwheel.name).all()
+    all_sequences = Session.query(Sequence).order_by(Sequence.name).all()
 
     events = Session.query(WeeklyEvent).order_by(WeeklyEvent.day, WeeklyEvent.time).all()
 
@@ -218,7 +218,7 @@ def event_list():
         "event_list.html",
         section="schedule",
         page="events",
-        all_clockwheels=all_clockwheels,
+        all_sequences=all_sequences,
         events=events,
         day_names=day_names,
     )

@@ -4,7 +4,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
-from automated.db import Session, Category, Clockwheel, ClockwheelHour, ClockwheelItem, Song
+from automated.db import Session
 from automated.views import automation, schedule, playlist, log
 
 app = Flask(__name__)
@@ -31,11 +31,11 @@ app.add_url_rule("/update", "automation_update", automation.update, methods=("GE
 app.add_url_rule("/schedule", "schedule", schedule.schedule, methods=("GET",))
 app.add_url_rule("/schedule/edit", "edit_schedule", schedule.edit_schedule, methods=("POST",))
 
-app.add_url_rule("/schedule/clockwheels/new", "new_clockwheel", schedule.new_clockwheel, methods=("POST",))
-app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>", "clockwheel", schedule.clockwheel, methods=("GET",))
-app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/add_item", "add_clockwheel_item", schedule.add_clockwheel_item, methods=("POST",))
-app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/remove_item", "remove_clockwheel_item", schedule.remove_clockwheel_item, methods=("POST",))
-app.add_url_rule("/schedule/clockwheels/<int:clockwheel_id>/replace", "replace_clockwheel_items", schedule.replace_clockwheel_items, methods=("POST",))
+app.add_url_rule("/schedule/sequences/new", "new_sequence", schedule.new_sequence, methods=("POST",))
+app.add_url_rule("/schedule/sequences/<int:sequence_id>", "sequence", schedule.sequence, methods=("GET",))
+app.add_url_rule("/schedule/sequences/<int:sequence_id>/add_item", "add_sequence_item", schedule.add_sequence_item, methods=("POST",))
+app.add_url_rule("/schedule/sequences/<int:sequence_id>/remove_item", "remove_sequence_item", schedule.remove_sequence_item, methods=("POST",))
+app.add_url_rule("/schedule/sequences/<int:sequence_id>/replace", "replace_sequence_items", schedule.replace_sequence_items, methods=("POST",))
 
 app.add_url_rule("/schedule/limits", "limits", schedule.limits, methods=("GET",))
 app.add_url_rule("/schedule/limits/save", "save_limits", schedule.save_limits, methods=("POST",))

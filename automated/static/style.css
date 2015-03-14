@@ -165,17 +165,17 @@ td:first-child {
 	text-align: center;
 }
 
-/* Clockwheels */
+/* Sequences */
 
-#clockwheel_items li {
+#sequence_items li {
 	cursor: move;
 }
 
-#clockwheel_items form {
+#sequence_items form {
 	float: right;
 }
 
-#clockwheel_items + form {
+#sequence_items + form {
 	margin-top: 10px;
 	text-align: center;
 }

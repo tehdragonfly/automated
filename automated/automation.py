@@ -5,13 +5,13 @@ from datetime import datetime, timedelta
 from redis import StrictRedis
 from threading import Thread
 
-from automated.db import Session, Category, Clockwheel, ClockwheelItem
+from automated.db import Session, Category, Sequence, SequenceItem
 from automated.helpers.plan import plan_attempt, shorten, lengthen
 from automated.helpers.play import play_song, queue_song, queue_event
 from automated.helpers.schedule import (
     find_event,
-    get_clockwheel,
-    populate_cw_items,
+    get_sequence,
+    populate_sequence_items,
     pick_song,
 )
 
@@ -37,8 +37,8 @@ def scheduler():
 
     next_time = datetime.fromtimestamp(round(time.time()+10))
     next_event = find_event(next_time)
-    cw = get_clockwheel(next_time)
-    cw_items = populate_cw_items(cw)
+    sequence = get_sequence(next_time)
+    sequence_items = populate_sequence_items(sequence)
 
     while redis.get("running") is not None:
 
@@ -79,7 +79,7 @@ def scheduler():
 
             # Start by making 10 attempts...
             for n in range(10):
-                attempt = plan_attempt(target_length, next_event.error_margin, next_time, cw, cw_items)
+                attempt = plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
                 if attempt["can_shorten"] or attempt["can_lengthen"]:
                     successful = True
                 candidates.append(attempt)
@@ -87,7 +87,7 @@ def scheduler():
             # ...and if that doesn't work, try another 100.
             if not successful:
                 for n in range(100):
-                    candidates.append(plan_attempt(target_length, next_event.error_margin, next_time, cw, cw_items))
+                    candidates.append(plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
 
             # Hopefully we should be able to find a successful plan in 10
             # attempts. For the particularly hard ones we can try 100, but
@@ -171,9 +171,9 @@ def scheduler():
                 queue_song(next_time, song, length)
                 next_time += length
 
-            # Set current clockwheel to match the end of the plan.
-            cw = plan["cw"]
-            cw_items = plan["cw_items"]
+            # Set current sequence to match the end of the plan.
+            sequence = plan["sequence"]
+            sequence_items = plan["sequence_items"]
 
             queue_event(next_time, next_event)
             if next_event.type == "stop":
@@ -187,23 +187,23 @@ def scheduler():
 
             # Improvise
 
-            if cw is None or len(cw_items) == 0:
+            if sequence is None or len(sequence_items) == 0:
 
-                # If there isn't a clockwheel, just pick any song.
-                print "CLOCKWHEEL IS NONE, PICKING ANY SONG."
+                # If there isn't a sequence, just pick any song.
+                print "SEQUENCE IS NONE, PICKING ANY SONG."
                 song = pick_song(next_time)
 
             else:
 
-                # Otherwise pick songs from the clockwheel.
-                print "CURRENT CLOCKWHEEL IS", cw
-                item, category = cw_items.pop(0)
+                # Otherwise pick songs from the sequence.
+                print "CURRENT SEQUENCE IS", sequence
+                item, category = sequence_items.pop(0)
                 print "ITEM", item
                 print "CATEGORY", category
                 song = pick_song(next_time, category.id)
 
             # Skip if we can't find a song.
-            # This allows us to move on if one category in the clockwheel is
+            # This allows us to move on if one category in the sequence is
             # exhausted, although it risks putting us into an infinite loop
             # if there aren't enough songs in the other categories.
             if song is not None:
@@ -222,13 +222,13 @@ def scheduler():
             print "SLEEPING"
             time.sleep(300)
 
-        # Check if we need a new clockwheel
+        # Check if we need a new sequence
         # or if the item list needs repopulating.
-        new_cw = get_clockwheel(next_time)
-        if new_cw != cw or len(cw_items) == 0:
-            print "REFRESHING CLOCKWHEEL."
-            cw = get_clockwheel(next_time)
-            cw_items = populate_cw_items(cw)
+        new_sequence = get_sequence(next_time)
+        if new_sequence != sequence or len(sequence_items) == 0:
+            print "REFRESHING SEQUENCE."
+            sequence = get_sequence(next_time)
+            sequence_items = populate_sequence_items(sequence)
 
         # Refresh the next event.
         next_event = find_event(next_time)
