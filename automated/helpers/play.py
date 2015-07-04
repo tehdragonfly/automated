@@ -70,7 +70,8 @@ def queue_song(queue_time, song, force_length=None):
     }
     redis.hmset("item:"+queue_item_id, item_info)
     redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
-    redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
+    redis.zadd("play_queue", queue_timestamp, queue_item_id)
 
 
 def queue_event(queue_time, event):
