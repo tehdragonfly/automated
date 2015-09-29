@@ -24,7 +24,9 @@ def play_song(queue_time, item_id, item):
 
     # Calculate how early we're meant to start the item and wait until then.
     play_time = queue_time - float(item.get("start", 0))
-    time.sleep(play_time - time.time())
+    wait = play_time - time.time()
+    if wait > 0:
+        time.sleep(wait)
 
     if item["type"] == "song":
         Session.add(Play(
@@ -69,7 +71,8 @@ def queue_song(queue_time, song, force_length=None):
         "filename": song.filename,
     }
     redis.hmset("item:"+queue_item_id, item_info)
-    redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
+    if song.artists:
+        redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
     queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
     redis.zadd("play_queue", queue_timestamp, queue_item_id)
 

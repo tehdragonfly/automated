@@ -20,7 +20,7 @@ def play_queue():
     while redis.get("running") is not None:
         t = time.time()
         # Cue things up 10 seconds ahead.
-        play_items = redis.zrangebyscore("play_queue", t, t+10, withscores=True)
+        play_items = redis.zrangebyscore("play_queue", t-1, t+10, withscores=True)
         for item_id, queue_time in play_items:
             item = redis.hgetall("item:"+item_id)
             if len(item) == 0:
@@ -28,16 +28,16 @@ def play_queue():
                 continue
             if item["status"] != "queued":
                 continue
-            Thread(target=play_song, args=(queue_time, item_id, item)).start()
             redis.hset("item:"+item_id, "status", "preparing")
+            Thread(target=play_song, args=(queue_time, item_id, item)).start()
         time.sleep(0.01)
 
 
 def scheduler():
 
-    next_time = datetime.fromtimestamp(round(time.time()+10))
-    next_event = find_event(next_time)
-    sequence = get_sequence(next_time)
+    next_time = None
+    next_event = None
+    sequence = get_sequence(datetime.now())
     sequence_items = populate_sequence_items(sequence)
 
     while redis.get("running") is not None:
@@ -200,13 +200,16 @@ def scheduler():
                 item, category = sequence_items.pop(0)
                 print "ITEM", item
                 print "CATEGORY", category
-                song = pick_song(next_time, category.id)
+                song = pick_song(next_time or datetime.now(), category.id)
 
             # Skip if we can't find a song.
             # This allows us to move on if one category in the sequence is
             # exhausted, although it risks putting us into an infinite loop
             # if there aren't enough songs in the other categories.
             if song is not None:
+                if next_time is None:
+                    print "NO NEXT_TIME, SETTING TO NOW PLUS", song.start
+                    next_time = datetime.now() + song.start
                 queue_song(next_time, song)
                 next_time += song.length
                 print "SELECTED", song
@@ -215,7 +218,8 @@ def scheduler():
 
         # Pause if we've reached more than 30 minutes into the future.
         while (
-            next_time-datetime.now() > timedelta(0, 1800)
+            next_time is not None
+            and next_time-datetime.now() > timedelta(0, 1800)
             and redis.get("running") is not None
         ):
             redis.publish("update", "update")
@@ -227,11 +231,12 @@ def scheduler():
         new_sequence = get_sequence(next_time)
         if new_sequence != sequence or len(sequence_items) == 0:
             print "REFRESHING SEQUENCE."
-            sequence = get_sequence(next_time)
+            sequence = get_sequence(next_time or datetime.now())
             sequence_items = populate_sequence_items(sequence)
 
         # Refresh the next event.
-        next_event = find_event(next_time)
+        if next_time is not None:
+            next_event = find_event(next_time)
 
 redis = StrictRedis()
 
