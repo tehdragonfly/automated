@@ -9,39 +9,25 @@ from automated.db import (
     Session,
     Artist,
     Category,
+    Event,
     ScheduleHour,
     Sequence,
     SequenceItem,
     Song,
-    WeeklyEvent,
 )
 
 redis = StrictRedis()
 
 
-def find_event(range_start):
-    event_query = Session.query(WeeklyEvent)
-    range_end = range_start + timedelta(0, 3600)
-    if range_start.day == range_end.day:
-        event_query = event_query.filter(and_(
-            WeeklyEvent.day == range_start.weekday(),
-            WeeklyEvent.time > range_start.time(),
-            WeeklyEvent.time <= range_end.time(),
-        ))
+def find_event(last_event, range_start):
+    event_query = Session.query(Event)
+    if last_event:
+        event_query = event_query.filter(Event.time > last_event.time)
     else:
-        # If we're less than an hour from the end of the day, we have to
-        # check the end of today and the beginning of tomorrow.
-        event_query = event_query.filter(or_(
-            and_(
-                WeeklyEvent.day == range_start.weekday(),
-                WeeklyEvent.time > range_start.time(),
-            ),
-            and_(
-                WeeklyEvent.day == range_end.weekday(),
-                WeeklyEvent.time <= range_end.time(),
-            ),
-        ))
-    event_query = event_query.order_by(WeeklyEvent.day, WeeklyEvent.time)
+        event_query = event_query.filter(Event.time > range_start)
+    range_end = range_start + timedelta(0, 3600)
+    event_query = event_query.filter(Event.time <= range_end)
+    event_query = event_query.order_by(Event.time)
     return event_query.first()
 
 

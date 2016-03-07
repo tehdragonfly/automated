@@ -61,119 +61,116 @@ def scheduler():
 
             print "EVENT:", next_event
 
-            target_time = next_time.replace(
-                hour=next_event.time.hour,
-                minute=next_event.time.minute,
-                second=next_event.time.second,
-                microsecond=next_event.time.microsecond,
-            )
-            if target_time < next_time:
-                target_time += timedelta(1)
-            print "TARGET TIME:", target_time
-            target_length = target_time - next_time
-            print "TARGET LENGTH:", target_length
+            if next_event.time > next_time:
 
-            candidates = []
+                print "TARGET TIME:", next_event.time
+                target_length = next_event.time - next_time
+                print "TARGET LENGTH:", target_length
 
-            successful = False
+                candidates = []
 
-            # Start by making 10 attempts...
-            for n in range(10):
-                attempt = plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
-                if attempt["can_shorten"] or attempt["can_lengthen"]:
-                    successful = True
-                candidates.append(attempt)
+                successful = False
 
-            # ...and if that doesn't work, try another 100.
-            if not successful:
-                for n in range(100):
-                    candidates.append(plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
+                # Start by making 10 attempts...
+                for n in range(10):
+                    attempt = plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                    if attempt["can_shorten"] or attempt["can_lengthen"]:
+                        successful = True
+                    candidates.append(attempt)
 
-            # Hopefully we should be able to find a successful plan in 10
-            # attempts. For the particularly hard ones we can try 100, but
-            # after that it's pretty unlikely that we can meet the target
-            # time, so we just give up at that point.
+                # ...and if that doesn't work, try another 100.
+                if not successful:
+                    for n in range(100):
+                        candidates.append(plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
 
-            candidates.sort(key=lambda a: (
-                0 if a["can_shorten"] or a["can_lengthen"] else 1,
-                min(a["distance"], a["mls_distance"]),
-            ))
+                # Hopefully we should be able to find a successful plan in 10
+                # attempts. For the particularly hard ones we can try 100, but
+                # after that it's pretty unlikely that we can meet the target
+                # time, so we just give up at that point.
 
-            plan = candidates[0]
+                candidates.sort(key=lambda a: (
+                    0 if a["can_shorten"] or a["can_lengthen"] else 1,
+                    min(a["distance"], a["mls_distance"]),
+                ))
 
-            for song in plan["songs"]:
-                print song
+                plan = candidates[0]
 
-            if plan["can_shorten"] and plan["can_lengthen"]:
+                for song in plan["songs"]:
+                    print song
 
-                # Do whichever is closer.
-                print "CAN SHORTEN OR LENGTHEN."
-                print "SHORTEN DISTANCE:", plan["distance"]
-                print "LENGTHEN DISTANCE:", plan["mls_distance"]
+                if plan["can_shorten"] and plan["can_lengthen"]:
 
-                if plan["distance"] < plan["mls_distance"]:
-                    print "SHORTENING"
+                    # Do whichever is closer.
+                    print "CAN SHORTEN OR LENGTHEN."
+                    print "SHORTEN DISTANCE:", plan["distance"]
+                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
+
+                    if plan["distance"] < plan["mls_distance"]:
+                        print "SHORTENING"
+                        songs = shorten(
+                            plan["songs"],
+                            plan["distance"],
+                            next_event.error_margin
+                        )
+                    else:
+                        print "LENGTHENING"
+                        songs = lengthen(
+                            plan["songs"][:-1],
+                            plan["mls_distance"],
+                            next_event.error_margin
+                        )
+
+                elif plan["can_shorten"]:
+
+                    # Shorten.
+                    print "CAN SHORTEN ONLY."
+                    print "SHORTEN DISTANCE:", plan["distance"]
                     songs = shorten(
                         plan["songs"],
                         plan["distance"],
                         next_event.error_margin
                     )
-                else:
-                    print "LENGTHENING"
+
+                elif plan["can_lengthen"]:
+
+                    # Lengthen.
+                    print "CAN LENGTHEN ONLY."
+                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
                     songs = lengthen(
                         plan["songs"][:-1],
                         plan["mls_distance"],
                         next_event.error_margin
                     )
 
-            elif plan["can_shorten"]:
+                else:
 
-                # Shorten.
-                print "CAN SHORTEN ONLY."
-                print "SHORTEN DISTANCE:", plan["distance"]
-                songs = shorten(
-                    plan["songs"],
-                    plan["distance"],
-                    next_event.error_margin
-                )
+                    # Do whichever is closer.
+                    print "NEITHER."
 
-            elif plan["can_lengthen"]:
+                    print "SHORTEN DISTANCE:", plan["distance"]
+                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
 
-                # Lengthen.
-                print "CAN LENGTHEN ONLY."
-                print "LENGTHEN DISTANCE:", plan["mls_distance"]
-                songs = lengthen(
-                    plan["songs"][:-1],
-                    plan["mls_distance"],
-                    next_event.error_margin
-                )
+                    if plan["distance"] < plan["mls_distance"]:
+                        print "SHORTENING"
+                        songs = plan["songs"]
+                        for song in songs:
+                            song[1] = song[0].min_length
+                    else:
+                        print "LENGTHENING"
+                        songs = plan["songs"][:-1]
+                        for song in songs:
+                            song[1] = song[0].max_length
+
+                for song, length in songs:
+                    queue_song(next_time, song, length)
+                    next_time += length
+
+                # Set current sequence to match the end of the plan.
+                sequence = plan["sequence"]
+                sequence_items = plan["sequence_items"]
 
             else:
-
-                # Do whichever is closer.
-                print "NEITHER."
-
-                print "SHORTEN DISTANCE:", plan["distance"]
-                print "LENGTHEN DISTANCE:", plan["mls_distance"]
-
-                if plan["distance"] < plan["mls_distance"]:
-                    print "SHORTENING"
-                    songs = plan["songs"]
-                    for song in songs:
-                        song[1] = song[0].min_length
-                else:
-                    print "LENGTHENING"
-                    songs = plan["songs"][:-1]
-                    for song in songs:
-                        song[1] = song[0].max_length
-
-            for song, length in songs:
-                queue_song(next_time, song, length)
-                next_time += length
-
-            # Set current sequence to match the end of the plan.
-            sequence = plan["sequence"]
-            sequence_items = plan["sequence_items"]
+                print "EVENT TIME IN THE PAST, PLAYING IMMEDIATELY"
 
             queue_event(next_time, next_event)
             if next_event.type == "stop":
@@ -236,7 +233,7 @@ def scheduler():
 
         # Refresh the next event.
         if next_time is not None:
-            next_event = find_event(next_time)
+            next_event = find_event(next_event, next_time)
 
 redis = StrictRedis()
 
