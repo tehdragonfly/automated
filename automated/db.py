@@ -138,9 +138,7 @@ class Event(Base):
     time = Column(DateTime, nullable=False, unique=True)
     error_margin = Column(Interval, nullable=False)
     name = Column(Unicode(50), nullable=False)
-    type = Column(Enum(u"audio", u"stop", name="event_type"))
-    length = Column(Interval, nullable=True)
-    filename = Column(Unicode(100), nullable=True)
+    type = Column(Enum(u"play", u"stop", name="event_type"))
     played = Column(Boolean, nullable=False, default=False)
 
     def __repr__(self):
@@ -148,6 +146,18 @@ class Event(Base):
             "<Event #%s: %s, %s, %s>"
             % (self.id, self.time, self.type, self.name)
         )
+
+
+class EventItem(Base):
+    __tablename__ = "event_items"
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    order = Column(Integer, nullable=False)
+    time = Column(DateTime, nullable=True)
+    error_margin = Column(Interval, nullable=True)
+    name = Column(Unicode(50), nullable=False)
+    length = Column(Interval, nullable=True)
+    filename = Column(Unicode(100), nullable=True)
 
 
 class Play(Base):
@@ -173,6 +183,8 @@ Sequence.items = relationship(SequenceItem, backref="sequence", order_by=Sequenc
 SequenceItem.category = relationship(Category)
 
 ScheduleHour.sequence = relationship(Sequence)
+
+Event.items = relationship(EventItem, backref="items", order_by=EventItem.order)
 
 Play.song = relationship(Song)
 
