@@ -7,7 +7,7 @@ from threading import Thread
 
 from automated.db import Session, Category, Sequence, SequenceItem
 from automated.helpers.plan import plan_attempt, shorten, lengthen
-from automated.helpers.play import play_song, queue_song, queue_event
+from automated.helpers.play import play_song, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import (
     find_event,
     get_sequence,
@@ -36,6 +36,7 @@ def play_queue():
 def scheduler():
 
     next_time = None
+    last_event = None
     next_event = None
     sequence = get_sequence(datetime.now())
     sequence_items = populate_sequence_items(sequence)
@@ -172,11 +173,13 @@ def scheduler():
             else:
                 print "EVENT TIME IN THE PAST, PLAYING IMMEDIATELY"
 
-            queue_event(next_time, next_event)
             if next_event.type == "stop":
-                break
+                queue_stop(next_time, next_event)
 
-            next_time += next_event.length
+            for event_item in next_event.items:
+                print "EVENT ITEM:", event_item
+                queue_event_item(next_time, event_item)
+                next_time += event_item.length
 
         else:
 
@@ -233,7 +236,9 @@ def scheduler():
 
         # Refresh the next event.
         if next_time is not None:
-            next_event = find_event(next_event, next_time)
+            if next_event is not None:
+                last_event = next_event
+            next_event = find_event(last_event, next_time)
 
 redis = StrictRedis()
 

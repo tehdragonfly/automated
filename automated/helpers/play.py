@@ -77,15 +77,28 @@ def queue_song(queue_time, song, force_length=None):
     redis.zadd("play_queue", queue_timestamp, queue_item_id)
 
 
-def queue_event(queue_time, event):
+def queue_stop(queue_time, event):
     queue_item_id = str(uuid4())
     item_info = {
         "status": "queued",
-        "type": event.type,
+        "type": "stop",
         "event_id": event.id,
-        "filename": event.filename,
     }
-    if event.length is not None:
-        item_info["length"] = event.length.total_seconds()
     redis.hmset("item:"+queue_item_id, item_info)
-    redis.zadd("play_queue", time.mktime(queue_time.timetuple()), queue_item_id)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
+    redis.zadd("play_queue", queue_timestamp, queue_item_id)
+
+
+def queue_event_item(queue_time, event_item):
+    queue_item_id = str(uuid4())
+    item_info = {
+        "status": "queued",
+        "type": "audio",
+        "event_item_id": event_item.id,
+        "filename": event_item.filename,
+    }
+    item_info["length"] = event_item.length.total_seconds()
+    redis.hmset("item:"+queue_item_id, item_info)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
+    redis.zadd("play_queue", queue_timestamp, queue_item_id)
+

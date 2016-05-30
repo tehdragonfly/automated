@@ -138,7 +138,7 @@ class Event(Base):
     time = Column(DateTime, nullable=False, unique=True)
     error_margin = Column(Interval, nullable=False)
     name = Column(Unicode(50), nullable=False)
-    type = Column(Enum(u"play", u"stop", name="event_type"))
+    type = Column(Enum(u"play", u"stop", name="event_type"), nullable=False)
     played = Column(Boolean, nullable=False, default=False)
 
     def __repr__(self):
@@ -156,8 +156,8 @@ class EventItem(Base):
     time = Column(DateTime, nullable=True)
     error_margin = Column(Interval, nullable=True)
     name = Column(Unicode(50), nullable=False)
-    length = Column(Interval, nullable=True)
-    filename = Column(Unicode(100), nullable=True)
+    length = Column(Interval, nullable=False)
+    filename = Column(Unicode(100), nullable=False)
 
 
 class Play(Base):
