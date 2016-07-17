@@ -22,12 +22,12 @@ redis = StrictRedis()
 def find_event(last_event, range_start):
     event_query = Session.query(Event)
     if last_event:
-        event_query = event_query.filter(Event.time > last_event.time)
+        event_query = event_query.filter(Event.start_time > last_event.start_time)
     else:
-        event_query = event_query.filter(Event.time > range_start)
+        event_query = event_query.filter(Event.start_time > range_start)
     range_end = range_start + timedelta(0, 3600)
-    event_query = event_query.filter(Event.time <= range_end)
-    event_query = event_query.order_by(Event.time)
+    event_query = event_query.filter(Event.start_time <= range_end)
+    event_query = event_query.order_by(Event.start_time)
     return event_query.first()
 
 

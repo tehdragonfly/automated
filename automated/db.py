@@ -134,30 +134,63 @@ class WeeklyEvent(Base):
 
 class Event(Base):
     __tablename__ = "events"
+    __mapper_args__ = {"polymorphic_on": "type"}
     id = Column(Integer, primary_key=True)
-    time = Column(DateTime, nullable=False, unique=True)
+    # TODO stream_id
+    start_time = Column(DateTime, nullable=False, unique=True)
     error_margin = Column(Interval, nullable=False)
+    type = Column(Enum(u"stop", u"play", name="event_type"), nullable=False)
     name = Column(Unicode(50), nullable=False)
-    type = Column(Enum(u"play", u"stop", name="event_type"), nullable=False)
     played = Column(Boolean, nullable=False, default=False)
 
     def __repr__(self):
         return (
-            "<Event #%s: %s, %s, %s>"
-            % (self.id, self.time, self.type, self.name)
+            "<%s #%s: %s, %s, %s>"
+            % (self.__class__, self.id, self.start_time, self.type, self.name)
         )
+
+
+class StopEvent(Event):
+    __mapper_args__ = {"polymorphic_identity": "stop"}
+
+
+class PlayEvent(Event):
+    __mapper_args__ = {"polymorphic_identity": "play"}
+    # TODO episode_id
+    sequence_id = Column(Integer, ForeignKey("sequences.id"))
+    end_time = Column(DateTime)
 
 
 class EventItem(Base):
     __tablename__ = "event_items"
+    __mapper_args__ = {"polymorphic_on": "type"}
     id = Column(Integer, primary_key=True)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     order = Column(Integer, nullable=False)
-    time = Column(DateTime, nullable=True)
+    start_time = Column(DateTime, nullable=True)
     error_margin = Column(Interval, nullable=True)
+    type = Column(Enum(u"song", u"recording", name="event_item_type"), nullable=False)
     name = Column(Unicode(50), nullable=False)
-    length = Column(Interval, nullable=False)
-    filename = Column(Unicode(100), nullable=False)
+
+    def __repr__(self):
+        return "<%s #%s: %s>" % (self.__class__, self.id, self.name)
+
+
+class SongEventItem(EventItem):
+    __mapper_args__ = {"polymorphic_identity": "song"}
+    song_id = Column(Integer, ForeignKey("songs.id"))
+
+    def __repr__(self):
+        return "<%s #%s: %s>" % (self.__class__, self.id, self.song)
+
+    @property
+    def length(self):
+        return self.song.length
+
+
+class RecordingEventItem(EventItem):
+    __mapper_args__ = {"polymorphic_identity": "recording"}
+    length = Column(Interval)
 
 
 class Play(Base):
@@ -185,6 +218,9 @@ SequenceItem.category = relationship(Category)
 ScheduleHour.sequence = relationship(Sequence)
 
 Event.items = relationship(EventItem, backref="items", order_by=EventItem.order)
+PlayEvent.sequence = relationship(Sequence)
+
+SongEventItem.song = relationship(Song)
 
 Play.song = relationship(Song)
 

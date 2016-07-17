@@ -90,12 +90,14 @@ def queue_stop(queue_time, event):
 
 
 def queue_event_item(queue_time, event_item):
+    if event_item.type == "song":
+        return queue_song(queue_time, event_item.song)
     queue_item_id = str(uuid4())
     item_info = {
         "status": "queued",
         "type": "audio",
         "event_item_id": event_item.id,
-        "filename": event_item.filename,
+        "filename": str(event_item.id),
     }
     item_info["length"] = event_item.length.total_seconds()
     redis.hmset("item:"+queue_item_id, item_info)

@@ -62,10 +62,10 @@ def scheduler():
 
             print "EVENT:", next_event
 
-            if next_event.time > next_time:
+            if next_event.start_time > next_time:
 
-                print "TARGET TIME:", next_event.time
-                target_length = next_event.time - next_time
+                print "TARGET TIME:", next_event.start_time
+                target_length = next_event.start_time - next_time
                 print "TARGET LENGTH:", target_length
 
                 candidates = []
