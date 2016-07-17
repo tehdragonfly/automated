@@ -146,7 +146,7 @@ class Event(Base):
     def __repr__(self):
         return (
             "<%s #%s: %s, %s, %s>"
-            % (self.__class__, self.id, self.start_time, self.type, self.name)
+            % (self.__class__.__name__, self.id, self.start_time, self.type, self.name)
         )
 
 
@@ -173,7 +173,7 @@ class EventItem(Base):
     name = Column(Unicode(50), nullable=False)
 
     def __repr__(self):
-        return "<%s #%s: %s>" % (self.__class__, self.id, self.name)
+        return "<%s #%s: %s>" % (self.__class__.__name__, self.id, self.name)
 
 
 class SongEventItem(EventItem):
@@ -181,7 +181,7 @@ class SongEventItem(EventItem):
     song_id = Column(Integer, ForeignKey("songs.id"))
 
     def __repr__(self):
-        return "<%s #%s: %s>" % (self.__class__, self.id, self.song)
+        return "<%s #%s: %s>" % (self.__class__.__name__, self.id, self.song)
 
     @property
     def length(self):
