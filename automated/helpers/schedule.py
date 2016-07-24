@@ -10,7 +10,6 @@ from automated.db import (
     Artist,
     Category,
     Event,
-    ScheduleHour,
     Sequence,
     SequenceItem,
     Song,
@@ -29,18 +28,6 @@ def find_event(last_event, range_start):
     event_query = event_query.filter(Event.start_time <= range_end)
     event_query = event_query.order_by(Event.start_time)
     return event_query.first()
-
-
-def get_sequence(target_time):
-    if target_time is None:
-        target_time = datetime.now()
-    try:
-        return Session.query(Sequence).join(ScheduleHour).filter(and_(
-            ScheduleHour.day == target_time.weekday(),
-            ScheduleHour.hour == target_time.hour,
-        )).one()
-    except NoResultFound:
-        return None
 
 
 def populate_sequence_items(sequence):

@@ -10,7 +10,6 @@ from automated.helpers.plan import plan_attempt, shorten, lengthen
 from automated.helpers.play import play_song, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import (
     find_event,
-    get_sequence,
     populate_sequence_items,
     pick_song,
 )
@@ -38,7 +37,8 @@ def scheduler():
     next_time = None
     last_event = None
     next_event = None
-    sequence = get_sequence(datetime.now())
+    # TODO get sequence from stream
+    sequence = None
     sequence_items = populate_sequence_items(sequence)
 
     while redis.get("running") is not None:
@@ -191,7 +191,7 @@ def scheduler():
 
                 # If there isn't a sequence, just pick any song.
                 print "SEQUENCE IS NONE, PICKING ANY SONG."
-                song = pick_song(next_time)
+                song = pick_song(next_time or datetime.now())
 
             else:
 
@@ -228,10 +228,11 @@ def scheduler():
 
         # Check if we need a new sequence
         # or if the item list needs repopulating.
-        new_sequence = get_sequence(next_time)
+        # TODO get sequence from stream
+        new_sequence = None
         if new_sequence != sequence or len(sequence_items) == 0:
             print "REFRESHING SEQUENCE."
-            sequence = get_sequence(next_time or datetime.now())
+            sequence = None
             sequence_items = populate_sequence_items(sequence)
 
         # Refresh the next event.

@@ -101,19 +101,6 @@ class SequenceItem(Base):
         )
 
 
-class ScheduleHour(Base):
-    __tablename__ = "schedule_hours"
-    day = Column(Integer, primary_key=True)
-    hour = Column(Integer, primary_key=True)
-    sequence_id = Column(Integer, ForeignKey("sequences.id"), nullable=False)
-
-    def __repr__(self):
-        return (
-            "<Day #%s hour #%s: sequence #%s>"
-            % (self.day, self.hour, self.sequence_id)
-        )
-
-
 class WeeklyEvent(Base):
     __tablename__ = "weekly_events"
     id = Column(Integer, primary_key=True)
@@ -214,8 +201,6 @@ Song.artists = relationship("Artist", secondary=song_artists, backref="songs", o
 
 Sequence.items = relationship(SequenceItem, backref="sequence", order_by=SequenceItem.number.asc())
 SequenceItem.category = relationship(Category)
-
-ScheduleHour.sequence = relationship(Sequence)
 
 Event.items = relationship(EventItem, backref="items", order_by=EventItem.order)
 PlayEvent.sequence = relationship(Sequence)

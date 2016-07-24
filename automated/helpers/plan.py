@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from automated.helpers.schedule import (
-    get_sequence,
     pick_song,
     populate_sequence_items,
 )
@@ -74,7 +73,8 @@ def plan_attempt(target_length, error_margin, next_time, sequence, sequence_item
 
         # Check if we need a new sequence
         # or if the item list needs repopulating.
-        new_sequence = get_sequence(next_time)
+        # TODO get sequence from stream
+        new_sequence = None
         if new_sequence != sequence or len(sequence_items) == 0:
             sequence = new_sequence
             sequence_items = populate_sequence_items(sequence)
