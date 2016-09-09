@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 
@@ -15,7 +16,7 @@ from automated.helpers.schedule import (
 )
 
 
-def play_queue():
+async def play_queue():
     while redis.get("running") is not None:
         t = time.time()
         # Cue things up 10 seconds ahead.
@@ -29,10 +30,10 @@ def play_queue():
                 continue
             redis.hset("item:"+item_id, "status", "preparing")
             Thread(target=play_song, args=(queue_time, item_id, item)).start()
-        time.sleep(0.01)
+        await asyncio.sleep(0.01)
 
 
-def scheduler():
+async def scheduler():
 
     next_time = None
     last_event = None
@@ -224,7 +225,7 @@ def scheduler():
         ):
             redis.publish("update", "update")
             print("SLEEPING")
-            time.sleep(300)
+            await asyncio.sleep(300)
 
         # Check if we need a new sequence
         # or if the item list needs repopulating.
@@ -259,15 +260,16 @@ for item_id in future_items:
 
 redis.set("running", "True")
 
-pq = Thread(target=play_queue)
-pq.start()
+loop = asyncio.get_event_loop()
 
 try:
-    scheduler()
-    pq.join()
+    loop.create_task(play_queue())
+    loop.create_task(scheduler())
+    loop.run_forever()
 except:
     redis.delete("running")
     raise
 
 redis.delete("running")
 redis.delete("automation_pid")
+
