@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from automated.db import Session, Play
 
-redis = StrictRedis()
+redis = StrictRedis(decode_responses=True)
 
 PLAYER = get_player_name()
 FNULL = open(os.devnull, 'w')

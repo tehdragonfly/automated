@@ -56,17 +56,17 @@ def scheduler():
 
         if next_event is not None:
 
-            print "PLANNING AHEAD."
+            print("PLANNING AHEAD.")
 
             # Plan ahead
 
-            print "EVENT:", next_event
+            print("EVENT:", next_event)
 
             if next_event.start_time > next_time:
 
-                print "TARGET TIME:", next_event.start_time
+                print("TARGET TIME:", next_event.start_time)
                 target_length = next_event.start_time - next_time
-                print "TARGET LENGTH:", target_length
+                print("TARGET LENGTH:", target_length)
 
                 candidates = []
 
@@ -97,24 +97,24 @@ def scheduler():
                 plan = candidates[0]
 
                 for song in plan["songs"]:
-                    print song
+                    print(song)
 
                 if plan["can_shorten"] and plan["can_lengthen"]:
 
                     # Do whichever is closer.
-                    print "CAN SHORTEN OR LENGTHEN."
-                    print "SHORTEN DISTANCE:", plan["distance"]
-                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
+                    print("CAN SHORTEN OR LENGTHEN.")
+                    print("SHORTEN DISTANCE:", plan["distance"])
+                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
 
                     if plan["distance"] < plan["mls_distance"]:
-                        print "SHORTENING"
+                        print("SHORTENING")
                         songs = shorten(
                             plan["songs"],
                             plan["distance"],
                             next_event.error_margin
                         )
                     else:
-                        print "LENGTHENING"
+                        print("LENGTHENING")
                         songs = lengthen(
                             plan["songs"][:-1],
                             plan["mls_distance"],
@@ -124,8 +124,8 @@ def scheduler():
                 elif plan["can_shorten"]:
 
                     # Shorten.
-                    print "CAN SHORTEN ONLY."
-                    print "SHORTEN DISTANCE:", plan["distance"]
+                    print("CAN SHORTEN ONLY.")
+                    print("SHORTEN DISTANCE:", plan["distance"])
                     songs = shorten(
                         plan["songs"],
                         plan["distance"],
@@ -135,8 +135,8 @@ def scheduler():
                 elif plan["can_lengthen"]:
 
                     # Lengthen.
-                    print "CAN LENGTHEN ONLY."
-                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
+                    print("CAN LENGTHEN ONLY.")
+                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
                     songs = lengthen(
                         plan["songs"][:-1],
                         plan["mls_distance"],
@@ -146,18 +146,18 @@ def scheduler():
                 else:
 
                     # Do whichever is closer.
-                    print "NEITHER."
+                    print("NEITHER.")
 
-                    print "SHORTEN DISTANCE:", plan["distance"]
-                    print "LENGTHEN DISTANCE:", plan["mls_distance"]
+                    print("SHORTEN DISTANCE:", plan["distance"])
+                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
 
                     if plan["distance"] < plan["mls_distance"]:
-                        print "SHORTENING"
+                        print("SHORTENING")
                         songs = plan["songs"]
                         for song in songs:
                             song[1] = song[0].min_length
                     else:
-                        print "LENGTHENING"
+                        print("LENGTHENING")
                         songs = plan["songs"][:-1]
                         for song in songs:
                             song[1] = song[0].max_length
@@ -171,35 +171,35 @@ def scheduler():
                 sequence_items = plan["sequence_items"]
 
             else:
-                print "EVENT TIME IN THE PAST, PLAYING IMMEDIATELY"
+                print("EVENT TIME IN THE PAST, PLAYING IMMEDIATELY")
 
             if next_event.type == "stop":
                 queue_stop(next_time, next_event)
 
             for event_item in next_event.items:
-                print "EVENT ITEM:", event_item
+                print("EVENT ITEM:", event_item)
                 queue_event_item(next_time, event_item)
                 next_time += event_item.length
 
         else:
 
-            print "IMPROVISING."
+            print("IMPROVISING.")
 
             # Improvise
 
             if sequence is None or len(sequence_items) == 0:
 
                 # If there isn't a sequence, just pick any song.
-                print "SEQUENCE IS NONE, PICKING ANY SONG."
+                print("SEQUENCE IS NONE, PICKING ANY SONG.")
                 song = pick_song(next_time or datetime.now())
 
             else:
 
                 # Otherwise pick songs from the sequence.
-                print "CURRENT SEQUENCE IS", sequence
+                print("CURRENT SEQUENCE IS", sequence)
                 item, category = sequence_items.pop(0)
-                print "ITEM", item
-                print "CATEGORY", category
+                print("ITEM", item)
+                print("CATEGORY", category)
                 song = pick_song(next_time or datetime.now(), category.id)
 
             # Skip if we can't find a song.
@@ -208,13 +208,13 @@ def scheduler():
             # if there aren't enough songs in the other categories.
             if song is not None:
                 if next_time is None:
-                    print "NO NEXT_TIME, SETTING TO NOW PLUS", song.start
+                    print("NO NEXT_TIME, SETTING TO NOW PLUS", song.start)
                     next_time = datetime.now() + song.start
                 queue_song(next_time, song)
                 next_time += song.length
-                print "SELECTED", song
+                print("SELECTED", song)
             else:
-                print "NOTHING HERE, SKIPPING."
+                print("NOTHING HERE, SKIPPING.")
 
         # Pause if we've reached more than 30 minutes into the future.
         while (
@@ -223,7 +223,7 @@ def scheduler():
             and redis.get("running") is not None
         ):
             redis.publish("update", "update")
-            print "SLEEPING"
+            print("SLEEPING")
             time.sleep(300)
 
         # Check if we need a new sequence
@@ -231,7 +231,7 @@ def scheduler():
         # TODO get sequence from stream
         new_sequence = None
         if new_sequence != sequence or len(sequence_items) == 0:
-            print "REFRESHING SEQUENCE."
+            print("REFRESHING SEQUENCE.")
             sequence = None
             sequence_items = populate_sequence_items(sequence)
 
@@ -241,7 +241,7 @@ def scheduler():
                 last_event = next_event
             next_event = find_event(last_event, next_time)
 
-redis = StrictRedis()
+redis = StrictRedis(decode_responses=True)
 
 redis.set("automation_pid", os.getpid())
 

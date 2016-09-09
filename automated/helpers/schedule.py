@@ -15,7 +15,7 @@ from automated.db import (
     Song,
 )
 
-redis = StrictRedis()
+redis = StrictRedis(decode_responses=True)
 
 
 def find_event(last_event, range_start):
