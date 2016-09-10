@@ -1,6 +1,4 @@
-import os
-import subprocess
-import time
+import asyncio, os, subprocess, time, vlc
 
 from datetime import datetime, timedelta
 from pydub.utils import get_player_name
@@ -9,18 +7,85 @@ from uuid import uuid4
 
 from automated.db import Session, Play
 
+
 redis = StrictRedis(decode_responses=True)
+
+
+# TODO config
+SONG_PATH = "songs/"
+AUDIO_PATH = "events/"
+
+
+async def play_song(queue_time, item_id, item):
+    # TODO redis shit
+
+    keyframes = [
+        (queue_time - 2, 40),
+        (queue_time, 100),
+        (queue_time + float(item["length"]), 100),
+        (queue_time + float(item["length"]) + 5, 0),
+    ]
+
+    mp = vlc.MediaPlayer(SONG_PATH + item["filename"])
+
+    mp.audio_set_volume(0)
+    mp.play()
+    while mp.get_state() in (vlc.State.NothingSpecial, vlc.State.Opening, vlc.State.Buffering):
+        await asyncio.sleep(0.01)
+    mp.pause()
+
+    play_time = queue_time - float(item["start"])
+    time_difference = play_time - time.time()
+    if time_difference >= 0:
+        print("future", time_difference)
+        # Future: start at zero with default volume.
+        mp.set_time(0)
+        previous_keyframe = (play_time, keyframes[0][1])
+        mp.audio_set_volume(keyframes[0][1])
+        await asyncio.sleep(time_difference)
+    elif time_difference < 0:
+        print("past", -int(time_difference * 1000))
+        # Past: skip to time and fade in.
+        mp.set_time(-int(time_difference * 1000))
+        previous_keyframe = (time.time(), 0)
+
+    mp.play()
+
+    for next_keyframe in keyframes:
+        while True:
+            current_time = time.time()
+            if previous_keyframe[1] == next_keyframe[1] and next_keyframe[0] - current_time > 1:
+                await asyncio.sleep(1)
+                continue
+            if current_time > next_keyframe[0]:
+                print("reached keyframe", next_keyframe)
+                mp.audio_set_volume(next_keyframe[1])
+                break
+            new_volume = previous_keyframe[1] + int(
+                (current_time - previous_keyframe[0])
+                / (next_keyframe[0] - previous_keyframe[0])
+                * (next_keyframe[1] - previous_keyframe[1])
+            )
+            print(new_volume)
+            mp.audio_set_volume(new_volume)
+            await asyncio.sleep(0.01)
+        previous_keyframe = next_keyframe
+
+    mp.stop()
+    mp.release()
+    print("end")
+
 
 PLAYER = get_player_name()
 FNULL = open(os.devnull, 'w')
 
 
-def play_song(queue_time, item_id, item):
+def old_play_song(queue_time, item_id, item):
 
     if item["type"] == "song":
-        filename = "songs/" + item["filename"]
+        filename = SONG_PATH + item["filename"]
     elif item["type"] == "audio":
-        filename = "events/" + item["filename"]
+        filename = AUDIO_PATH + item["filename"]
 
     # Calculate how early we're meant to start the item and wait until then.
     play_time = queue_time - float(item.get("start", 0))

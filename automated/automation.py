@@ -8,12 +8,8 @@ from threading import Thread
 
 from automated.db import Session, Category, Sequence, SequenceItem
 from automated.helpers.plan import plan_attempt, shorten, lengthen
-from automated.helpers.play import play_song, queue_song, queue_stop, queue_event_item
-from automated.helpers.schedule import (
-    find_event,
-    populate_sequence_items,
-    pick_song,
-)
+from automated.helpers.play import play_song, old_play_song, queue_song, queue_stop, queue_event_item
+from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
 
 
 async def play_queue():
@@ -29,13 +25,16 @@ async def play_queue():
             if item["status"] != "queued":
                 continue
             redis.hset("item:"+item_id, "status", "preparing")
-            Thread(target=play_song, args=(queue_time, item_id, item)).start()
+            if item["type"] == "song":
+                loop.create_task(play_song(queue_time, item_id, item))
+            else:
+                Thread(target=old_play_song, args=(queue_time, item_id, item)).start()
         await asyncio.sleep(0.01)
 
 
 async def scheduler():
 
-    next_time = None
+    next_time = datetime.now() + timedelta(0, 5)
     last_event = None
     next_event = None
     # TODO get sequence from stream
@@ -208,9 +207,6 @@ async def scheduler():
             # exhausted, although it risks putting us into an infinite loop
             # if there aren't enough songs in the other categories.
             if song is not None:
-                if next_time is None:
-                    print("NO NEXT_TIME, SETTING TO NOW PLUS", song.start)
-                    next_time = datetime.now() + song.start
                 queue_song(next_time, song)
                 next_time += song.length
                 print("SELECTED", song)
@@ -219,8 +215,7 @@ async def scheduler():
 
         # Pause if we've reached more than 30 minutes into the future.
         while (
-            next_time is not None
-            and next_time-datetime.now() > timedelta(0, 1800)
+            next_time-datetime.now() > timedelta(0, 1800)
             and redis.get("running") is not None
         ):
             redis.publish("update", "update")
@@ -237,10 +232,9 @@ async def scheduler():
             sequence_items = populate_sequence_items(sequence)
 
         # Refresh the next event.
-        if next_time is not None:
-            if next_event is not None:
-                last_event = next_event
-            next_event = find_event(last_event, next_time)
+        if next_event is not None:
+            last_event = next_event
+        next_event = find_event(last_event, next_time)
 
 redis = StrictRedis(decode_responses=True)
 

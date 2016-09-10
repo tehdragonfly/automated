@@ -17,6 +17,7 @@ setup(
         "gunicorn",
         "psycopg2",
         "pydub",
+        "python-vlc",
         "redis",
         "sqlalchemy",
     ],
