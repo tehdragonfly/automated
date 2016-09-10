@@ -8,7 +8,7 @@ from threading import Thread
 
 from automated.db import Session, Category, Sequence, SequenceItem
 from automated.helpers.plan import plan_attempt, shorten, lengthen
-from automated.helpers.play import play_song, old_play_song, queue_song, queue_stop, queue_event_item
+from automated.helpers.play import play_item, old_play_song, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
 
 
@@ -25,8 +25,8 @@ async def play_queue():
             if item["status"] != "queued":
                 continue
             redis.hset("item:"+item_id, "status", "preparing")
-            if item["type"] == "song":
-                loop.create_task(play_song(queue_time, item_id, item))
+            if item["type"] != "stop":
+                loop.create_task(play_item(queue_time, item_id, item))
             else:
                 Thread(target=old_play_song, args=(queue_time, item_id, item)).start()
         await asyncio.sleep(0.01)

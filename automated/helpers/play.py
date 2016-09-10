@@ -12,21 +12,25 @@ redis = StrictRedis(decode_responses=True)
 
 
 # TODO config
-SONG_PATH = "songs/"
-AUDIO_PATH = "events/"
+PATHS = {
+    "song": "songs/",
+    "audio": "events/",
+}
 
 
-async def play_song(queue_time, item_id, item):
+async def play_item(queue_time, item_id, item):
     # TODO redis shit
 
-    keyframes = [
-        (queue_time - 2, 40),
+    keyframes = []
+    if float(item["start"]) >= 2:
+        keyframes.append((queue_time - 2, 40))
+    keyframes += [
         (queue_time, 100),
         (queue_time + float(item["length"]), 100),
         (queue_time + float(item["length"]) + 5, 0),
     ]
 
-    mp = vlc.MediaPlayer(SONG_PATH + item["filename"])
+    mp = vlc.MediaPlayer(PATHS[item["type"]] + item["filename"])
 
     mp.audio_set_volume(0)
     mp.play()
@@ -38,7 +42,7 @@ async def play_song(queue_time, item_id, item):
     time_difference = play_time - time.time()
     if time_difference >= 0:
         print("future", time_difference)
-        # Future: start at zero with default volume.
+        # Future: start at the beginning with default volume.
         mp.set_time(0)
         previous_keyframe = (play_time, keyframes[0][1])
         mp.audio_set_volume(keyframes[0][1])
@@ -83,9 +87,9 @@ FNULL = open(os.devnull, 'w')
 def old_play_song(queue_time, item_id, item):
 
     if item["type"] == "song":
-        filename = SONG_PATH + item["filename"]
+        filename = PATHS["song"] + item["filename"]
     elif item["type"] == "audio":
-        filename = AUDIO_PATH + item["filename"]
+        filename = PATHS["audio"] + item["filename"]
 
     # Calculate how early we're meant to start the item and wait until then.
     play_time = queue_time - float(item.get("start", 0))
@@ -126,13 +130,12 @@ def queue_song(queue_time, song, force_length=None):
     item_info = {
         "status": "queued",
         "type": "song",
-        "song_id": song.id,
         "start": song.start.total_seconds(),
         "length": (
             force_length.total_seconds() if force_length is not None
             else song.length.total_seconds()
         ),
-        "normal_length": song.length.total_seconds(),
+        "song_id": song.id,
         "filename": song.filename,
     }
     redis.hmset("item:"+queue_item_id, item_info)
@@ -161,10 +164,11 @@ def queue_event_item(queue_time, event_item):
     item_info = {
         "status": "queued",
         "type": "audio",
+        "start": 0,
+        "length": event_item.length.total_seconds(),
         "event_item_id": event_item.id,
         "filename": str(event_item.id),
     }
-    item_info["length"] = event_item.length.total_seconds()
     redis.hmset("item:"+queue_item_id, item_info)
     queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
     redis.zadd("play_queue", queue_timestamp, queue_item_id)
