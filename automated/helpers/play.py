@@ -1,4 +1,4 @@
-import asyncio, os, subprocess, time, vlc
+import asyncio, aioredis, os, subprocess, time, vlc
 
 from datetime import datetime, timedelta
 from pydub.utils import get_player_name
@@ -8,7 +8,10 @@ from uuid import uuid4
 from automated.db import Session, Play
 
 
-redis = StrictRedis(decode_responses=True)
+loop = asyncio.get_event_loop()
+redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encoding="utf-8"))
+
+old_redis = StrictRedis(decode_responses=True)
 
 
 # TODO config
@@ -125,7 +128,7 @@ def old_play_song(queue_time, item_id, item):
         redis.delete("automation_pid")
 
 
-def queue_song(queue_time, song, force_length=None):
+async def queue_song(queue_time, song, force_length=None):
     queue_item_id = str(uuid4())
     item_info = {
         "status": "queued",
@@ -138,26 +141,26 @@ def queue_song(queue_time, song, force_length=None):
         "song_id": song.id,
         "filename": song.filename,
     }
-    redis.hmset("item:"+queue_item_id, item_info)
+    await redis.hmset_dict("item:" + queue_item_id, item_info)
     if song.artists:
-        redis.sadd("item:"+queue_item_id+":artists", *(_.id for _ in song.artists))
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
-    redis.zadd("play_queue", queue_timestamp, queue_item_id)
+        await redis.sadd("item:" + queue_item_id + ":artists", *(_.id for _ in song.artists))
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
+    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
 
 
-def queue_stop(queue_time, event):
+async def queue_stop(queue_time, event):
     queue_item_id = str(uuid4())
     item_info = {
         "status": "queued",
         "type": "stop",
         "event_id": event.id,
     }
-    redis.hmset("item:"+queue_item_id, item_info)
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
-    redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    await redis.hmset_dict("item:" + queue_item_id, item_info)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
+    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
 
 
-def queue_event_item(queue_time, event_item):
+async def queue_event_item(queue_time, event_item):
     if event_item.type == "song":
         return queue_song(queue_time, event_item.song)
     queue_item_id = str(uuid4())
@@ -169,7 +172,7 @@ def queue_event_item(queue_time, event_item):
         "event_item_id": event_item.id,
         "filename": str(event_item.id),
     }
-    redis.hmset("item:"+queue_item_id, item_info)
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond/1000000.0
-    redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    await redis.hmset_dict("item:" + queue_item_id, item_info)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
+    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
 

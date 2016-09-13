@@ -1,4 +1,5 @@
 import asyncio
+import aioredis
 import os
 import time
 
@@ -12,19 +13,46 @@ from automated.helpers.play import play_item, old_play_song, queue_song, queue_s
 from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
 
 
+loop = asyncio.get_event_loop()
+redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encoding="utf-8"))
+
+
+async def setup():
+    await redis.set("automation_pid", os.getpid())
+
+    # Set default values for repetition limits if they don't exist already.
+    if await redis.get("song_limit") is None:
+        await redis.set("song_limit", 3600)
+    if await redis.get("artist_limit") is None:
+        await redis.set("artist_limit", 3600)
+
+    # Make sure any existing future items are cleared.
+    future_items = await redis.zrangebyscore("play_queue", time.time(), float("inf"))
+    for item_id in future_items:
+        await redis.zrem("play_queue", item_id)
+        await redis.delete("item:"+item_id)
+
+    await redis.set("running", "True")
+
+
+def split_zitems(zitems):
+    i = iter(zitems)
+    return zip(i, i)
+
+
 async def play_queue():
     while redis.get("running") is not None:
         t = time.time()
         # Cue things up 10 seconds ahead.
-        play_items = redis.zrangebyscore("play_queue", t-1, t+10, withscores=True)
+        play_items = split_zitems(await redis.zrangebyscore("play_queue", t - 1, t + 10, withscores=True))
         for item_id, queue_time in play_items:
-            item = redis.hgetall("item:"+item_id)
+            item = await redis.hgetall("item:" + item_id)
             if len(item) == 0:
-                redis.zrem("play_queue", item_id, item)
+                await redis.zrem("play_queue", item_id, item)
                 continue
             if item["status"] != "queued":
                 continue
-            redis.hset("item:"+item_id, "status", "preparing")
+            await redis.hset("item:" + item_id, "status", "preparing")
             if item["type"] != "stop":
                 loop.create_task(play_item(queue_time, item_id, item))
             else:
@@ -41,18 +69,18 @@ async def scheduler():
     sequence = None
     sequence_items = populate_sequence_items(sequence)
 
-    while redis.get("running") is not None:
+    while await redis.get("running") is not None:
 
         # Trim playlist items older than the longest repetition limit.
         longest_limit = max(
-            float(redis.get("song_limit")),
-            float(redis.get("artist_limit")),
+            float(await redis.get("song_limit")),
+            float(await redis.get("artist_limit")),
         )
-        old_items = redis.zrangebyscore("play_queue", 0, time.time() - longest_limit)
+        old_items = await redis.zrangebyscore("play_queue", 0, time.time() - longest_limit)
         for item_id in old_items:
-            redis.zrem("play_queue", item_id)
-            redis.delete("item:"+item_id)
-            redis.delete("item:"+item_id+":artists")
+            await redis.zrem("play_queue", item_id)
+            await redis.delete("item:" + item_id)
+            await redis.delete("item:" + item_id + ":artists")
 
         if next_event is not None:
 
@@ -163,7 +191,7 @@ async def scheduler():
                             song[1] = song[0].max_length
 
                 for song, length in songs:
-                    queue_song(next_time, song, length)
+                    await queue_song(next_time, song, length)
                     next_time += length
 
                 # Set current sequence to match the end of the plan.
@@ -174,11 +202,11 @@ async def scheduler():
                 print("EVENT TIME IN THE PAST, PLAYING IMMEDIATELY")
 
             if next_event.type == "stop":
-                queue_stop(next_time, next_event)
+                await queue_stop(next_time, next_event)
 
             for event_item in next_event.items:
                 print("EVENT ITEM:", event_item)
-                queue_event_item(next_time, event_item)
+                await queue_event_item(next_time, event_item)
                 next_time += event_item.length
 
         else:
@@ -207,7 +235,7 @@ async def scheduler():
             # exhausted, although it risks putting us into an infinite loop
             # if there aren't enough songs in the other categories.
             if song is not None:
-                queue_song(next_time, song)
+                await queue_song(next_time, song)
                 next_time += song.length
                 print("SELECTED", song)
             else:
@@ -216,9 +244,9 @@ async def scheduler():
         # Pause if we've reached more than 30 minutes into the future.
         while (
             next_time-datetime.now() > timedelta(0, 1800)
-            and redis.get("running") is not None
+            and await redis.get("running") is not None
         ):
-            redis.publish("update", "update")
+            await redis.publish("update", "update")
             print("SLEEPING")
             await asyncio.sleep(300)
 
@@ -236,34 +264,16 @@ async def scheduler():
             last_event = next_event
         next_event = find_event(last_event, next_time)
 
-redis = StrictRedis(decode_responses=True)
-
-redis.set("automation_pid", os.getpid())
-
-# Set default values for repetition limits if they don't exist already.
-if redis.get("song_limit") is None:
-    redis.set("song_limit", 3600)
-if redis.get("artist_limit") is None:
-    redis.set("artist_limit", 3600)
-
-# Make sure any existing future items are cleared.
-future_items = redis.zrangebyscore("play_queue", time.time(), "inf")
-for item_id in future_items:
-    redis.zrem("play_queue", item_id)
-    redis.delete("item:"+item_id)
-
-redis.set("running", "True")
-
-loop = asyncio.get_event_loop()
 
 try:
+    loop.run_until_complete(setup())
     loop.create_task(play_queue())
     loop.create_task(scheduler())
     loop.run_forever()
 except:
-    redis.delete("running")
+    loop.run_until_complete(redis.delete("running"))
     raise
 
-redis.delete("running")
-redis.delete("automation_pid")
+loop.run_until_complete(redis.delete("running"))
+loop.run_until_complete(redis.delete("automation_pid"))
 
