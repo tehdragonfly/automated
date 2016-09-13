@@ -4,10 +4,8 @@ import os
 import time
 
 from datetime import datetime, timedelta
-from redis import StrictRedis
 from threading import Thread
 
-from automated.db import Session, Category, Sequence, SequenceItem
 from automated.helpers.plan import plan_attempt, shorten, lengthen
 from automated.helpers.play import play_item, old_play_song, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
@@ -101,16 +99,16 @@ async def scheduler():
                 successful = False
 
                 # Start by making 10 attempts...
-                for n in range(10):
-                    attempt = plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                for n in range(10): # TODO asyncio.wait()
+                    attempt = await plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
                     if attempt["can_shorten"] or attempt["can_lengthen"]:
                         successful = True
                     candidates.append(attempt)
 
                 # ...and if that doesn't work, try another 100.
                 if not successful:
-                    for n in range(100):
-                        candidates.append(plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
+                    for n in range(100): # TODO asyncio.wait()
+                        candidates.append(await plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
 
                 # Hopefully we should be able to find a successful plan in 10
                 # attempts. For the particularly hard ones we can try 100, but
@@ -219,7 +217,7 @@ async def scheduler():
 
                 # If there isn't a sequence, just pick any song.
                 print("SEQUENCE IS NONE, PICKING ANY SONG.")
-                song = pick_song(next_time or datetime.now())
+                song = await pick_song(next_time or datetime.now())
 
             else:
 
@@ -228,7 +226,7 @@ async def scheduler():
                 item, category = sequence_items.pop(0)
                 print("ITEM", item)
                 print("CATEGORY", category)
-                song = pick_song(next_time or datetime.now(), category.id)
+                song = await pick_song(next_time or datetime.now(), category.id)
 
             # Skip if we can't find a song.
             # This allows us to move on if one category in the sequence is

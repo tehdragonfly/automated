@@ -8,7 +8,7 @@ from automated.helpers.schedule import (
 TEN_MINUTES = timedelta(0, 600)
 
 
-def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items):
+async def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items):
 
     min_target_length = target_length - error_margin
     max_target_length = target_length + error_margin
@@ -41,7 +41,7 @@ def plan_attempt(target_length, error_margin, next_time, sequence, sequence_item
         if sequence is None or len(sequence_items) == 0:
 
             # If there isn't a sequence, just pick any song.
-            song = pick_song(
+            song = await pick_song(
                 next_time,
                 songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
@@ -51,7 +51,7 @@ def plan_attempt(target_length, error_margin, next_time, sequence, sequence_item
 
             # Otherwise pick songs from the sequence.
             item, category = sequence_items.pop(0)
-            song = pick_song(
+            song = await pick_song(
                 next_time, category.id,
                 songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
