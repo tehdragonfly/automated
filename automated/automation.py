@@ -94,21 +94,22 @@ async def scheduler():
                 target_length = next_event.start_time - next_time
                 print("TARGET LENGTH:", target_length)
 
-                candidates = []
-
-                successful = False
-
                 # Start by making 10 attempts...
-                for n in range(10): # TODO asyncio.wait()
-                    attempt = await plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
-                    if attempt["can_shorten"] or attempt["can_lengthen"]:
-                        successful = True
-                    candidates.append(attempt)
+                attempts, errors = await asyncio.wait([
+                    plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                    for n in range(10)
+                ])
+                candidates = [_.result() for _ in attempts]
+                # TODO do something with errors
 
-                # ...and if that doesn't work, try another 100.
-                if not successful:
-                    for n in range(100): # TODO asyncio.wait()
-                        candidates.append(await plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items))
+                # ...and if that didn't give us any good plans, try another 100.
+                if not any(attempt["can_shorten"] or attempt["can_lengthen"] for attempt in candidates):
+                    attempts, errors = await asyncio.wait([
+                        plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                        for n in range(10)
+                    ])
+                    candidates += [_.result() for _ in attempts]
+                    # TODO do something with errors
 
                 # Hopefully we should be able to find a successful plan in 10
                 # attempts. For the particularly hard ones we can try 100, but
