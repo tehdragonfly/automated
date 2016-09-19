@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 from automated.helpers.plan import plan_attempt, shorten, lengthen
-from automated.helpers.play import play_item, old_play_song, queue_song, queue_stop, queue_event_item
+from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
 
 
@@ -39,7 +39,7 @@ def split_zitems(zitems):
 
 
 async def play_queue():
-    while redis.get("running") is not None:
+    while await redis.get("running") is not None:
         t = time.time()
         # Cue things up 10 seconds ahead.
         play_items = split_zitems(await redis.zrangebyscore("play_queue", t - 1, t + 10, withscores=True))
@@ -54,7 +54,7 @@ async def play_queue():
             if item["type"] != "stop":
                 loop.create_task(play_item(queue_time, item_id, item))
             else:
-                Thread(target=old_play_song, args=(queue_time, item_id, item)).start()
+                loop.create_task(stop_item(queue_time, item_id, item))
         await asyncio.sleep(0.01)
 
 

@@ -24,7 +24,8 @@ engine = create_engine(
     convert_unicode=True,
     pool_recycle=3600,
 )
-Session = scoped_session(sessionmaker(bind=engine, autoflush=False))
+sm = sessionmaker(bind=engine, autoflush=False)
+Session = scoped_session(sm)
 
 Base = declarative_base(bind=engine)
 Base.query = Session.query_property()

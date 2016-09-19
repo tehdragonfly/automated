@@ -1,13 +1,16 @@
 import asyncio, aioredis, os, subprocess, time, vlc
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from automated.db import Session, Play
+from automated.db import sm, Play
 
 
 loop = asyncio.get_event_loop()
 redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encoding="utf-8"))
+
+executor = ThreadPoolExecutor()
 
 
 # TODO config
@@ -54,10 +57,16 @@ async def play_item(queue_time, item_id, item):
 
     mp.play()
 
-    # TODO log play
-    loop.create_task(update_item(item_id, "playing"))
+    # Don't await because we don't care about the response.
+    loop.create_task(update_item_status(item_id, "playing"))
+
+    logged = False
 
     for next_keyframe in keyframes:
+        if item["type"] == "song" and not logged and previous_keyframe[0] == queue_time:
+            executor.submit(log_song, item["song_id"], item["length"])
+            logged = True
+
         while mp.get_state() != vlc.State.Ended:
             current_time = time.time()
             if previous_keyframe[1] == next_keyframe[1] and next_keyframe[0] - current_time > 1:
@@ -75,14 +84,29 @@ async def play_item(queue_time, item_id, item):
             print(new_volume)
             mp.audio_set_volume(new_volume)
             await asyncio.sleep(0.01)
+
         previous_keyframe = next_keyframe
 
     print("ended")
-    loop.create_task(update_item(item_id, "played"))
+    loop.create_task(update_item_status(item_id, "played"))
+
+    if await redis.get("running") is None:
+        await redis.delete("automation_pid")
 
     mp.stop()
     mp.release()
     print("end")
+
+
+async def stop_item(queue_time, item_id, item):
+    time_difference = queue_time - time.time()
+    if time_difference >= 0:
+        await asyncio.sleep(time_difference)
+
+    await redis.hset("item:" + item_id, "status", "played")
+    await redis.publish("update", "update")
+    await redis.delete("running")
+    await redis.delete("automation_pid")
 
 
 async def update_item_status(item_id, status):
@@ -90,45 +114,14 @@ async def update_item_status(item_id, status):
     await redis.publish("update", "update")
 
 
-def old_play_song(queue_time, item_id, item):
-
-    if item["type"] == "song":
-        filename = PATHS["song"] + item["filename"]
-    elif item["type"] == "audio":
-        filename = PATHS["audio"] + item["filename"]
-
-    # Calculate how early we're meant to start the item and wait until then.
-    play_time = queue_time - float(item.get("start", 0))
-    wait = play_time - time.time()
-    if wait > 0:
-        time.sleep(wait)
-
-    if item["type"] == "song":
-        Session.add(Play(
-            time=datetime.now(),
-            song_id=int(item["song_id"]),
-            length=timedelta(0, float(item["length"]))
-        ))
-        Session.commit()
-    elif item["type"] == "stop":
-        redis.hset("item:"+item_id, "status", "played")
-        redis.publish("update", "update")
-        redis.delete("running")
-        redis.delete("automation_pid")
-        return
-
-    redis.hset("item:"+item_id, "status", "playing")
-    redis.publish("update", "update")
-
-    subprocess.call(
-        [PLAYER, "-nodisp", "-autoexit", filename],
-        stdout=FNULL, stderr=FNULL,
-    )
-    redis.hset("item:"+item_id, "status", "played")
-    redis.publish("update", "update")
-
-    if redis.get("running") is None:
-        redis.delete("automation_pid")
+def log_song(song_id, length):
+    db = sm()
+    db.add(Play(
+        time=datetime.now(),
+        song_id=int(song_id),
+        length=timedelta(0, float(length)),
+    ))
+    db.commit()
 
 
 async def queue_song(queue_time, song, force_length=None):
