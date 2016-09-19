@@ -1,8 +1,6 @@
 import asyncio, aioredis, os, subprocess, time, vlc
 
 from datetime import datetime, timedelta
-from pydub.utils import get_player_name
-from redis import StrictRedis
 from uuid import uuid4
 
 from automated.db import Session, Play
@@ -10,8 +8,6 @@ from automated.db import Session, Play
 
 loop = asyncio.get_event_loop()
 redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encoding="utf-8"))
-
-old_redis = StrictRedis(decode_responses=True)
 
 
 # TODO config
@@ -58,8 +54,11 @@ async def play_item(queue_time, item_id, item):
 
     mp.play()
 
+    # TODO log play
+    loop.create_task(update_item(item_id, "playing"))
+
     for next_keyframe in keyframes:
-        while True:
+        while mp.get_state() != vlc.State.Ended:
             current_time = time.time()
             if previous_keyframe[1] == next_keyframe[1] and next_keyframe[0] - current_time > 1:
                 await asyncio.sleep(1)
@@ -78,13 +77,17 @@ async def play_item(queue_time, item_id, item):
             await asyncio.sleep(0.01)
         previous_keyframe = next_keyframe
 
+    print("ended")
+    loop.create_task(update_item(item_id, "played"))
+
     mp.stop()
     mp.release()
     print("end")
 
 
-PLAYER = get_player_name()
-FNULL = open(os.devnull, 'w')
+async def update_item_status(item_id, status):
+    await redis.hset("item:" + item_id, "status", "playing")
+    await redis.publish("update", "update")
 
 
 def old_play_song(queue_time, item_id, item):
