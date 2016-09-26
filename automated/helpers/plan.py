@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 from automated.helpers.schedule import (
@@ -6,6 +7,8 @@ from automated.helpers.schedule import (
 )
 
 TEN_MINUTES = timedelta(0, 600)
+
+executor = ThreadPoolExecutor()
 
 
 async def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items):
@@ -41,7 +44,8 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
         if sequence is None or len(sequence_items) == 0:
 
             # If there isn't a sequence, just pick any song.
-            song = await pick_song(
+            song = await loop.run_in_executor(
+                executor, pick_song,
                 next_time,
                 songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
@@ -51,7 +55,8 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
 
             # Otherwise pick songs from the sequence.
             item, category = sequence_items.pop(0)
-            song = await pick_song(
+            song = await loop.run_in_executor(
+                executor, pick_song,
                 next_time, category.id,
                 songs=attempt_songs, artists=attempt_artists,
                 length=remaining_time if remaining_time <= TEN_MINUTES else None,
@@ -77,7 +82,7 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
         new_sequence = None
         if new_sequence != sequence or len(sequence_items) == 0:
             sequence = new_sequence
-            sequence_items = populate_sequence_items(sequence)
+            sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
     can_shorten = attempt_min_length <= max_target_length
     can_lengthen = attempt_max_length - songs[-1][0].max_length >= min_target_length

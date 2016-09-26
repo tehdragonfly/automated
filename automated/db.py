@@ -1,3 +1,7 @@
+import datetime
+import time
+
+from contextlib import contextmanager
 from datetime import timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import backref, relationship, scoped_session, sessionmaker
@@ -16,9 +20,6 @@ from sqlalchemy import (
     Unicode,
 )
 
-import datetime
-import time
-
 engine = create_engine(
     "postgres://meow:meow@localhost/foreverchannel",
     convert_unicode=True,
@@ -26,6 +27,22 @@ engine = create_engine(
 )
 sm = sessionmaker(bind=engine, autoflush=False)
 Session = scoped_session(sm)
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = sm()
+    try:
+        yield session
+        session.expunge_all()
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 
 Base = declarative_base(bind=engine)
 Base.query = Session.query_property()

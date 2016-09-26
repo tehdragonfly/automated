@@ -3,8 +3,8 @@ import aioredis
 import os
 import time
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from threading import Thread
 
 from automated.helpers.plan import plan_attempt, shorten, lengthen
 from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_item
@@ -13,6 +13,8 @@ from automated.helpers.schedule import find_event, populate_sequence_items, pick
 
 loop = asyncio.get_event_loop()
 redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encoding="utf-8"))
+
+executor = ThreadPoolExecutor()
 
 
 async def setup():
@@ -65,7 +67,7 @@ async def scheduler():
     next_event = None
     # TODO get sequence from stream
     sequence = None
-    sequence_items = populate_sequence_items(sequence)
+    sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
     while await redis.get("running") is not None:
 
@@ -218,7 +220,7 @@ async def scheduler():
 
                 # If there isn't a sequence, just pick any song.
                 print("SEQUENCE IS NONE, PICKING ANY SONG.")
-                song = await pick_song(next_time or datetime.now())
+                song = await loop.run_in_executor(executor, pick_song, next_time or datetime.now())
 
             else:
 
@@ -227,7 +229,7 @@ async def scheduler():
                 item, category = sequence_items.pop(0)
                 print("ITEM", item)
                 print("CATEGORY", category)
-                song = await pick_song(next_time or datetime.now(), category.id)
+                song = await loop.run_in_executor(executor, pick_song, next_time or datetime.now(), category.id)
 
             # Skip if we can't find a song.
             # This allows us to move on if one category in the sequence is
@@ -256,12 +258,12 @@ async def scheduler():
         if new_sequence != sequence or len(sequence_items) == 0:
             print("REFRESHING SEQUENCE.")
             sequence = None
-            sequence_items = populate_sequence_items(sequence)
+            sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
         # Refresh the next event.
         if next_event is not None:
             last_event = next_event
-        next_event = find_event(last_event, next_time)
+        next_event = await loop.run_in_executor(executor, find_event, last_event, next_time)
 
 
 try:
