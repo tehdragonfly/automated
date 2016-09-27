@@ -195,7 +195,12 @@ class SongEventItem(EventItem):
 
 class RecordingEventItem(EventItem):
     __mapper_args__ = {"polymorphic_identity": "recording"}
-    length = Column(Interval)
+    start = Column(Interval, nullable=False, default=timedelta(0))
+    end = Column(Interval, nullable=False)
+
+    @property
+    def length(self):
+        return self.end - self.start
 
 
 class Play(Base):
