@@ -163,7 +163,7 @@ async def queue_event_item(queue_time, event_item):
     item_info = {
         "status": "queued",
         "type": "audio",
-        "start": 0,
+        "start": event_item.start.total_seconds(),
         "length": event_item.length.total_seconds(),
         "event_item_id": event_item.id,
         "filename": str(event_item.id),

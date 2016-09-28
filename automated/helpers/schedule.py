@@ -70,6 +70,8 @@ def pick_song(queue_time, category_id=None, songs=None, artists=None, length=Non
         if len(artists) != 0:
             song_query = song_query.filter(~Song.artists.any(Artist.id.in_(artists)))
 
+        song_query = song_query.options(joinedload(Song.artists))
+
         if length is not None:
             length_song = song_query.filter(and_(
                 Song.min_end-Song.start <= length,
@@ -77,8 +79,6 @@ def pick_song(queue_time, category_id=None, songs=None, artists=None, length=Non
             )).first()
             if length_song is not None:
                 return length_song
-
-        song_query = song_query.options(joinedload(Song.artists))
 
         return song_query.first()
 

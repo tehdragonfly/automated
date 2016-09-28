@@ -1,3 +1,5 @@
+import asyncio
+
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
@@ -8,6 +10,7 @@ from automated.helpers.schedule import (
 
 TEN_MINUTES = timedelta(0, 600)
 
+loop = asyncio.get_event_loop()
 executor = ThreadPoolExecutor()
 
 
@@ -46,9 +49,9 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
             # If there isn't a sequence, just pick any song.
             song = await loop.run_in_executor(
                 executor, pick_song,
-                next_time,
-                songs=attempt_songs, artists=attempt_artists,
-                length=remaining_time if remaining_time <= TEN_MINUTES else None,
+                next_time, None,
+                attempt_songs, attempt_artists,
+                remaining_time if remaining_time <= TEN_MINUTES else None,
             )
 
         else:
@@ -58,8 +61,8 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
             song = await loop.run_in_executor(
                 executor, pick_song,
                 next_time, category.id,
-                songs=attempt_songs, artists=attempt_artists,
-                length=remaining_time if remaining_time <= TEN_MINUTES else None,
+                attempt_songs, attempt_artists,
+                remaining_time if remaining_time <= TEN_MINUTES else None,
             )
 
         if song is None:
