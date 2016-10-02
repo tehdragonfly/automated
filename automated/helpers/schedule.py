@@ -30,7 +30,21 @@ def find_event(last_event, range_start):
         range_end = range_start + timedelta(0, 3600)
         event_query = event_query.filter(Event.start_time <= range_end)
         event_query = event_query.order_by(Event.start_time)
-        return event_query.first()
+
+        event = event_query.first()
+
+        # Force SQLAlchemy to fetch associated items before we destroy the session.
+        # doing this because i have no idea how to get joinedload() to fetch them
+        # TODO figure that out
+        if event:
+            for item in event.items:
+                item.start_time
+                if hasattr(item, "song"):
+                    item.song.artists
+                if hasattr(item, "start"):
+                    item.start
+
+        return event
 
 
 def populate_sequence_items(sequence):

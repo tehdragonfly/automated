@@ -158,7 +158,7 @@ async def queue_stop(queue_time, event):
 
 async def queue_event_item(queue_time, event_item):
     if event_item.type == "song":
-        return queue_song(queue_time, event_item.song)
+        return await queue_song(queue_time, event_item.song)
     queue_item_id = str(uuid4())
     item_info = {
         "status": "queued",
