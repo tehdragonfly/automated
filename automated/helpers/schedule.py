@@ -37,6 +37,7 @@ def find_event(last_event, range_start):
         # doing this because i have no idea how to get joinedload() to fetch them
         # TODO figure that out
         if event:
+            event.sequence
             for item in event.items:
                 item.start_time
                 if hasattr(item, "song"):

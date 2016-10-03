@@ -62,11 +62,12 @@ async def play_queue():
 
 async def scheduler():
 
-    next_time = datetime.now() + timedelta(0, 5)
-    last_event = None
-    next_event = None
+    next_time      = datetime.now() + timedelta(0, 5)
+    last_event     = None
+    current_event  = None
+    next_event     = None
     # TODO get sequence from stream
-    sequence = None
+    sequence       = None
     sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
     while await redis.get("running") is not None:
@@ -205,10 +206,19 @@ async def scheduler():
             if next_event.type == "stop":
                 await queue_stop(next_time, next_event)
 
-            for event_item in next_event.items:
-                print("EVENT ITEM:", event_item)
-                await queue_event_item(next_time, event_item)
-                next_time += event_item.length
+            else:
+                last_event, current_event, next_event = current_event, next_event, None
+
+                # Set current sequence based on the current event.
+                if current_event.sequence and current_event.sequence != sequence:
+                    print("USING EVENT SEQUENCE:", current_event.sequence)
+                    sequence = current_event.sequence
+                    sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
+
+                for event_item in current_event.items:
+                    print("EVENT ITEM:", event_item)
+                    await queue_event_item(next_time, event_item)
+                    next_time += event_item.length
 
         else:
 
@@ -244,26 +254,26 @@ async def scheduler():
 
         # Pause if we've reached more than 30 minutes into the future.
         while (
-            next_time-datetime.now() > timedelta(0, 1800)
+            next_time - datetime.now() > timedelta(0, 1800)
             and await redis.get("running") is not None
         ):
             await redis.publish("update", "update")
             print("SLEEPING")
             await asyncio.sleep(300)
 
+        # Refresh the last, current and next events.
+        if current_event and current_event.end_time and current_event.end_time <= next_time:
+            last_event, current_event = current_event, None
+        next_event = await loop.run_in_executor(executor, find_event, last_event, next_time)
+
         # Check if we need a new sequence
         # or if the item list needs repopulating.
         # TODO get sequence from stream
-        new_sequence = None
+        new_sequence = current_event.sequence if current_event and current_event.sequence else None
         if new_sequence != sequence or len(sequence_items) == 0:
             print("REFRESHING SEQUENCE.")
-            sequence = None
+            sequence = new_sequence
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
-
-        # Refresh the next event.
-        if next_event is not None:
-            last_event = next_event
-        next_event = await loop.run_in_executor(executor, find_event, last_event, next_time)
 
 
 try:
