@@ -63,7 +63,6 @@ async def play_queue():
 async def scheduler():
 
     next_time      = datetime.now() + timedelta(0, 5)
-    last_event     = None
     current_event  = None
     next_event     = None
     # TODO get sequence from stream
@@ -99,7 +98,7 @@ async def scheduler():
 
                 # Start by making 10 attempts...
                 attempts, errors = await asyncio.wait([
-                    plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                    plan_attempt(target_length, next_event.error_margin, next_time, current_event, sequence, sequence_items)
                     for n in range(10)
                 ])
                 candidates = [_.result() for _ in attempts]
@@ -108,7 +107,7 @@ async def scheduler():
                 # ...and if that didn't give us any good plans, try another 100.
                 if not any(attempt["can_shorten"] or attempt["can_lengthen"] for attempt in candidates):
                     attempts, errors = await asyncio.wait([
-                        plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items)
+                        plan_attempt(target_length, next_event.error_margin, next_time, current_event, sequence, sequence_items)
                         for n in range(10)
                     ])
                     candidates += [_.result() for _ in attempts]
@@ -207,7 +206,7 @@ async def scheduler():
                 await queue_stop(next_time, next_event)
 
             else:
-                last_event, current_event, next_event = current_event, next_event, None
+                current_event, next_event = next_event, None
 
                 # Set current sequence based on the current event.
                 if current_event.sequence and current_event.sequence != sequence:
@@ -263,8 +262,8 @@ async def scheduler():
 
         # Refresh the last, current and next events.
         if current_event and current_event.end_time and current_event.end_time <= next_time:
-            last_event, current_event = current_event, None
-        next_event = await loop.run_in_executor(executor, find_event, last_event, next_time)
+            current_event = None
+        next_event = await loop.run_in_executor(executor, find_event, current_event, next_time)
 
         # Check if we need a new sequence
         # or if the item list needs repopulating.

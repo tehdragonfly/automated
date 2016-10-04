@@ -14,7 +14,7 @@ loop = asyncio.get_event_loop()
 executor = ThreadPoolExecutor()
 
 
-async def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items):
+async def plan_attempt(target_length, error_margin, next_time, current_event, sequence, sequence_items):
 
     min_target_length = target_length - error_margin
     max_target_length = target_length + error_margin
@@ -79,10 +79,14 @@ async def plan_attempt(target_length, error_margin, next_time, sequence, sequenc
 
         next_time += song.length
 
+        # Clear current event if we've reached the end.
+        if current_event and current_event.end_time and current_event.end_time <= next_time:
+            current_event = None
+
         # Check if we need a new sequence
         # or if the item list needs repopulating.
         # TODO get sequence from stream
-        new_sequence = None
+        new_sequence = current_event.sequence if current_event and current_event.sequence else None
         if new_sequence != sequence or len(sequence_items) == 0:
             sequence = new_sequence
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
