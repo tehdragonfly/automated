@@ -14,7 +14,7 @@ loop = asyncio.get_event_loop()
 executor = ThreadPoolExecutor()
 
 
-async def plan_attempt(target_length, error_margin, next_time, current_event, sequence, sequence_items):
+async def plan_attempt(target_length, error_margin, next_time, sequence, sequence_items, use_sequence_until=None):
 
     min_target_length = target_length - error_margin
     max_target_length = target_length + error_margin
@@ -79,16 +79,16 @@ async def plan_attempt(target_length, error_margin, next_time, current_event, se
 
         next_time += song.length
 
-        # Clear current event if we've reached the end.
-        if current_event and current_event.end_time and current_event.end_time <= next_time:
-            current_event = None
+        # Reset the sequence if necessary.
+        if use_sequence_until and next_time > use_sequence_until:
+            print("EVENT OVER, RESETTING SEQUENCE")
+            # TODO get default sequence from stream
+            sequence = None
+            sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
-        # Check if we need a new sequence
-        # or if the item list needs repopulating.
-        # TODO get sequence from stream
-        new_sequence = current_event.sequence if current_event and current_event.sequence else None
-        if new_sequence != sequence or len(sequence_items) == 0:
-            sequence = new_sequence
+        # Or just check if the item list needs repopulating.
+        elif len(sequence_items) == 0:
+            print("REPOPULATING SEQUENCE_ITEMS")
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
     can_shorten = attempt_min_length <= max_target_length

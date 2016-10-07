@@ -98,7 +98,7 @@ async def scheduler():
 
                 # Start by making 10 attempts...
                 attempts, errors = await asyncio.wait([
-                    plan_attempt(target_length, next_event.error_margin, next_time, current_event, sequence, sequence_items)
+                    plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items, current_event.end_time)
                     for n in range(10)
                 ])
                 candidates = [_.result() for _ in attempts]
@@ -107,7 +107,7 @@ async def scheduler():
                 # ...and if that didn't give us any good plans, try another 100.
                 if not any(attempt["can_shorten"] or attempt["can_lengthen"] for attempt in candidates):
                     attempts, errors = await asyncio.wait([
-                        plan_attempt(target_length, next_event.error_margin, next_time, current_event, sequence, sequence_items)
+                        plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items, current_event.end_time)
                         for n in range(10)
                     ])
                     candidates += [_.result() for _ in attempts]
@@ -260,19 +260,20 @@ async def scheduler():
             print("SLEEPING")
             await asyncio.sleep(300)
 
-        # Refresh the last, current and next events.
-        if current_event and current_event.end_time and current_event.end_time <= next_time:
+        # Reset the sequence if the current event is over.
+        if current_event and current_event.end_time and next_time > current_event.end_time:
+            print("EVENT OVER, RESETTING SEQUENCE")
             current_event = None
-        next_event = await loop.run_in_executor(executor, find_event, current_event, next_time)
-
-        # Check if we need a new sequence
-        # or if the item list needs repopulating.
-        # TODO get sequence from stream
-        new_sequence = current_event.sequence if current_event and current_event.sequence else None
-        if new_sequence != sequence or len(sequence_items) == 0:
-            print("REFRESHING SEQUENCE.")
-            sequence = new_sequence
+            # TODO get default sequence from stream
+            sequence = None
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
+
+        # Or just check if the item list needs repopulating.
+        elif len(sequence_items) == 0:
+            print("REPOPULATING SEQUENCE_ITEMS")
+            sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
+
+        next_event = await loop.run_in_executor(executor, find_event, current_event, next_time)
 
 
 try:
