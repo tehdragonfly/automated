@@ -6,7 +6,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
-from automated.helpers.plan import plan_attempt, shorten, lengthen
+from automated.helpers.plan import generate_plan, PastTargetTime
 from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_item
 from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
 
@@ -88,118 +88,18 @@ async def scheduler():
 
             # Plan ahead
 
-            print("EVENT:", next_event)
-
-            if next_event.start_time > next_time:
-
-                print("TARGET TIME:", next_event.start_time)
-                target_length = next_event.start_time - next_time
-                print("TARGET LENGTH:", target_length)
-
-                # Start by making 10 attempts...
-                attempts, errors = await asyncio.wait([
-                    plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items, current_event.end_time)
-                    for n in range(10)
-                ])
-                candidates = [_.result() for _ in attempts]
-                # TODO do something with errors
-
-                # ...and if that didn't give us any good plans, try another 100.
-                if not any(attempt["can_shorten"] or attempt["can_lengthen"] for attempt in candidates):
-                    attempts, errors = await asyncio.wait([
-                        plan_attempt(target_length, next_event.error_margin, next_time, sequence, sequence_items, current_event.end_time)
-                        for n in range(10)
-                    ])
-                    candidates += [_.result() for _ in attempts]
-                    # TODO do something with errors
-
-                # Hopefully we should be able to find a successful plan in 10
-                # attempts. For the particularly hard ones we can try 100, but
-                # after that it's pretty unlikely that we can meet the target
-                # time, so we just give up at that point.
-
-                candidates.sort(key=lambda a: (
-                    0 if a["can_shorten"] or a["can_lengthen"] else 1,
-                    min(a["distance"], a["mls_distance"]),
-                ))
-
-                plan = candidates[0]
-
-                for song in plan["songs"]:
-                    print(song)
-
-                if plan["can_shorten"] and plan["can_lengthen"]:
-
-                    # Do whichever is closer.
-                    print("CAN SHORTEN OR LENGTHEN.")
-                    print("SHORTEN DISTANCE:", plan["distance"])
-                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
-
-                    if plan["distance"] < plan["mls_distance"]:
-                        print("SHORTENING")
-                        songs = shorten(
-                            plan["songs"],
-                            plan["distance"],
-                            next_event.error_margin
-                        )
-                    else:
-                        print("LENGTHENING")
-                        songs = lengthen(
-                            plan["songs"][:-1],
-                            plan["mls_distance"],
-                            next_event.error_margin
-                        )
-
-                elif plan["can_shorten"]:
-
-                    # Shorten.
-                    print("CAN SHORTEN ONLY.")
-                    print("SHORTEN DISTANCE:", plan["distance"])
-                    songs = shorten(
-                        plan["songs"],
-                        plan["distance"],
-                        next_event.error_margin
-                    )
-
-                elif plan["can_lengthen"]:
-
-                    # Lengthen.
-                    print("CAN LENGTHEN ONLY.")
-                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
-                    songs = lengthen(
-                        plan["songs"][:-1],
-                        plan["mls_distance"],
-                        next_event.error_margin
-                    )
-
-                else:
-
-                    # Do whichever is closer.
-                    print("NEITHER.")
-
-                    print("SHORTEN DISTANCE:", plan["distance"])
-                    print("LENGTHEN DISTANCE:", plan["mls_distance"])
-
-                    if plan["distance"] < plan["mls_distance"]:
-                        print("SHORTENING")
-                        songs = plan["songs"]
-                        for song in songs:
-                            song[1] = song[0].min_length
-                    else:
-                        print("LENGTHENING")
-                        songs = plan["songs"][:-1]
-                        for song in songs:
-                            song[1] = song[0].max_length
-
+            try:
+                songs, sequence, sequence_items = await generate_plan(
+                    next_time,
+                    next_event,
+                    sequence,
+                    sequence_items,
+                    current_event.end_time if current_event else None,
+                )
                 for song, length in songs:
                     await queue_song(next_time, song, length)
                     next_time += length
-
-                # Set current sequence to match the end of the plan.
-                sequence = plan["sequence"]
-                sequence_items = plan["sequence_items"]
-
-            else:
+            except PastTargetTime:
                 print("EVENT TIME IN THE PAST, PLAYING IMMEDIATELY")
 
             if next_event.type == "stop":
