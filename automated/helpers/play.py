@@ -81,7 +81,6 @@ async def play_item(queue_time, item_id, item):
                 / (next_keyframe[0] - previous_keyframe[0])
                 * (next_keyframe[1] - previous_keyframe[1])
             )
-            print(new_volume)
             mp.audio_set_volume(new_volume)
             await asyncio.sleep(0.01)
 

@@ -62,12 +62,13 @@ async def play_queue():
 
 async def scheduler():
 
-    next_time      = datetime.now() + timedelta(0, 5)
-    current_event  = None
-    next_event     = None
+    next_time           = datetime.now() + timedelta(0, 5)
+    current_event       = None
+    current_event_items = []
+    next_event          = None
     # TODO get sequence from stream
-    sequence       = None
-    sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
+    sequence            = None
+    sequence_items      = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
     while await redis.get("running") is not None:
 
@@ -82,11 +83,45 @@ async def scheduler():
             await redis.delete("item:" + item_id)
             await redis.delete("item:" + item_id + ":artists")
 
-        if next_event is not None:
+        if current_event and current_event_items:
 
-            print("PLANNING AHEAD.")
+            print("PLANNING AHEAD FOR EVENT ITEM.")
 
-            # Plan ahead
+            # Plan ahead for an event item
+
+            event_item = current_event_items.pop(0)
+
+            try:
+                songs, sequence, sequence_items = await generate_plan(
+                    next_time,
+                    event_item,
+                    sequence,
+                    sequence_items,
+                    current_event.end_time if current_event else None,
+                )
+                for song, length in songs:
+                    await queue_song(next_time, song, length)
+                    next_time += length
+            except PastTargetTime:
+                print("EVENT TIME IN THE PAST, PLAYING IMMEDIATELY")
+
+            # Play this event item...
+            print("EVENT ITEM:", event_item)
+            await queue_event_item(next_time, event_item)
+            next_time += event_item.length
+
+            # ...and any following event items without a start time.
+            while current_event_items and not current_event_items[0].start_time:
+                event_item = current_event_items.pop(0)
+                print("EVENT ITEM:", event_item)
+                await queue_event_item(next_time, event_item)
+                next_time += event_item.length
+
+        elif next_event is not None:
+
+            print("PLANNING AHEAD FOR EVENT.")
+
+            # Plan ahead for an event
 
             try:
                 songs, sequence, sequence_items = await generate_plan(
@@ -107,6 +142,9 @@ async def scheduler():
 
             else:
                 current_event, next_event = next_event, None
+                # Convert to a list so we can pop items without the ORM trying
+                # to update the database.
+                current_event_items = list(current_event.items)
 
                 # Set current sequence based on the current event.
                 if current_event.sequence and current_event.sequence != sequence:
@@ -114,7 +152,8 @@ async def scheduler():
                     sequence = current_event.sequence
                     sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
-                for event_item in current_event.items:
+                while current_event_items and not current_event_items[0].start_time:
+                    event_item = current_event_items.pop(0)
                     print("EVENT ITEM:", event_item)
                     await queue_event_item(next_time, event_item)
                     next_time += event_item.length
@@ -161,7 +200,12 @@ async def scheduler():
             await asyncio.sleep(300)
 
         # Reset the sequence if the current event is over.
-        if current_event and current_event.end_time and next_time > current_event.end_time:
+        # If there's an explicit end time, wait until then.
+        # Otherwise end when we run out of event items.
+        if current_event and (
+            (current_event.end_time and next_time > current_event.end_time)
+            or (not current_event.end_time and not current_event_items)
+        ):
             print("EVENT OVER, RESETTING SEQUENCE")
             current_event = None
             # TODO get default sequence from stream
