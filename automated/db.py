@@ -52,6 +52,16 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 
+class Stream(Base):
+    __tablename__ = "streams"
+    id = Column(Integer, primary_key=True)
+    name = Column(Unicode(64), nullable=False)
+    default_sequence_id = Column(Integer, ForeignKey("sequences.id"))
+
+    def __repr__(self):
+        return "<Stream #%s: %s>" % (self.id, self.name)
+
+
 class Song(Base):
     __tablename__ = "songs"
     id = Column(Integer, primary_key=True)
@@ -218,6 +228,8 @@ song_artists = Table(
     Column("artist_id", Integer, ForeignKey("artists.id"), primary_key=True)
 )
 
+
+Stream.default_sequence = relationship(Sequence)
 
 Song.category = relationship(Category, backref="songs")
 Song.artists = relationship("Artist", secondary=song_artists, backref="songs", order_by=Artist.name.asc())

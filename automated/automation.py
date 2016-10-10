@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from automated.helpers.plan import generate_plan, PastTargetTime
 from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_item
-from automated.helpers.schedule import find_event, populate_sequence_items, pick_song
+from automated.helpers.schedule import get_stream, get_default_sequence, find_event, populate_sequence_items, pick_song
 
 
 loop = asyncio.get_event_loop()
@@ -66,9 +66,11 @@ async def scheduler():
     current_event       = None
     current_event_items = []
     next_event          = None
-    # TODO get sequence from stream
-    sequence            = None
+    stream              = await loop.run_in_executor(executor, get_stream)
+    sequence            = await loop.run_in_executor(executor, get_default_sequence)
     sequence_items      = await loop.run_in_executor(executor, populate_sequence_items, sequence)
+
+    print("STREAM IS", stream)
 
     while await redis.get("running") is not None:
 
@@ -147,9 +149,10 @@ async def scheduler():
                 current_event_items = list(current_event.items)
 
                 # Set current sequence based on the current event.
-                if current_event.sequence and current_event.sequence != sequence:
+                new_sequence = current_event.sequence or await loop.run_in_executor(executor, get_default_sequence)
+                if new_sequence.id != sequence.id:
                     print("USING EVENT SEQUENCE:", current_event.sequence)
-                    sequence = current_event.sequence
+                    sequence       = current_event.sequence
                     sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
                 while current_event_items and not current_event_items[0].start_time:
@@ -208,8 +211,7 @@ async def scheduler():
         ):
             print("EVENT OVER, RESETTING SEQUENCE")
             current_event = None
-            # TODO get default sequence from stream
-            sequence = None
+            sequence       = await loop.run_in_executor(executor, get_default_sequence)
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
         # Or just check if the item list needs repopulating.

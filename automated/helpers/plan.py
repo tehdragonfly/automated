@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 from automated.helpers.schedule import (
+    get_default_sequence,
     pick_song,
     populate_sequence_items,
 )
@@ -194,8 +195,7 @@ async def plan_attempt(next_time, target_length, error_margin, sequence, sequenc
         # Reset the sequence if necessary.
         if use_sequence_until and next_time > use_sequence_until:
             print("EVENT OVER, RESETTING SEQUENCE")
-            # TODO get default sequence from stream
-            sequence = None
+            sequence       = await loop.run_in_executor(executor, get_default_sequence)
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 
         # Or just check if the item list needs repopulating.
