@@ -151,7 +151,7 @@ class Event(Base):
     __tablename__ = "events"
     __mapper_args__ = {"polymorphic_on": "type"}
     id = Column(Integer, primary_key=True)
-    # TODO stream_id
+    stream_id = Column(Integer, ForeignKey("streams.id"))
     start_time = Column(DateTime, nullable=False, unique=True)
     error_margin = Column(Interval, nullable=False)
     type = Column(Enum(u"stop", u"play", name="event_type"), nullable=False)

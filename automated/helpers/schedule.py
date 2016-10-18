@@ -33,7 +33,9 @@ def get_default_sequence():
 
 def find_event(last_event, range_start):
     with session_scope() as db:
-        event_query = db.query(Event)
+        event_query = db.query(Event).filter(Event.stream_id == (
+            db.query(Stream.id).filter(Stream.id == int(os.environ.get("STREAM_ID", 1)))
+        ))
         if last_event:
             event_query = event_query.filter(Event.start_time > last_event.start_time)
         else:
