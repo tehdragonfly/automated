@@ -23,18 +23,18 @@ redis = StrictRedis(decode_responses=True)
 
 def get_stream():
     with session_scope() as db:
-        return db.query(Stream).filter(Stream.id == int(os.environ.get("STREAM_ID", 1))).one()
+        return db.query(Stream).filter(Stream.url_name == os.environ["STREAM"]).one()
 
 
 def get_default_sequence():
     with session_scope() as db:
-        return db.query(Sequence).join(Stream).filter(Stream.id == int(os.environ.get("STREAM_ID", 1))).first()
+        return db.query(Sequence).join(Stream).filter(Stream.url_name == os.environ["STREAM"]).first()
 
 
 def find_event(last_event, range_start):
     with session_scope() as db:
         event_query = db.query(Event).filter(Event.stream_id == (
-            db.query(Stream.id).filter(Stream.id == int(os.environ.get("STREAM_ID", 1)))
+            db.query(Stream.url_name).filter(Stream.url_name == os.environ["STREAM"])
         ))
         if last_event:
             event_query = event_query.filter(Event.start_time > last_event.start_time)

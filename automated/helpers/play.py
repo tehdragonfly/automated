@@ -21,8 +21,6 @@ PATHS = {
 
 
 async def play_item(queue_time, item_id, item):
-    # TODO redis shit
-
     keyframes = []
     if float(item["start"]) >= 2:
         keyframes.append((queue_time - 2, 40))

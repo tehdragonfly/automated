@@ -55,6 +55,7 @@ def init_db():
 class Stream(Base):
     __tablename__ = "streams"
     id = Column(Integer, primary_key=True)
+    url_name = Column(Unicode(64), nullable=False, unique=True)
     name = Column(Unicode(64), nullable=False)
     default_sequence_id = Column(Integer, ForeignKey("sequences.id"))
 
