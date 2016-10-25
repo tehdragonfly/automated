@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from automated.db import sm, Play
+from automated.db import sm, Play, Stream
 
 
 loop = asyncio.get_event_loop()
@@ -114,6 +114,7 @@ async def update_item_status(item_id, status):
 def log_song(song_id, length):
     db = sm()
     db.add(Play(
+        stream_id=db.query(Stream.id).filter(Stream.url_name == os.environ["STREAM"]).as_scalar(),
         time=datetime.now(),
         song_id=int(song_id),
         length=timedelta(0, float(length)),

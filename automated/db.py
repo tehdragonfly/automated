@@ -217,6 +217,7 @@ class RecordingEventItem(EventItem):
 class Play(Base):
     __tablename__ = "plays"
     id = Column(Integer, primary_key=True)
+    stream_id = Column(Integer, ForeignKey("streams.id"))
     time = Column(DateTime, nullable=False)
     length = Column(Interval, nullable=False)
     type = Column(Enum("song", "event", "stop", name="play_type"), nullable=False, default="song")
@@ -243,6 +244,7 @@ PlayEvent.sequence = relationship(Sequence)
 
 SongEventItem.song = relationship(Song)
 
+Play.stream = relationship(Stream)
 Play.song = relationship(Song)
 
 
