@@ -1,4 +1,5 @@
 import datetime
+import sys
 import time
 
 from contextlib import contextmanager
@@ -24,6 +25,7 @@ engine = create_engine(
     "postgres://meow:meow@localhost/foreverchannel",
     convert_unicode=True,
     pool_recycle=3600,
+    echo="--debug" in sys.argv,
 )
 sm = sessionmaker(bind=engine, autoflush=False)
 Session = scoped_session(sm)
