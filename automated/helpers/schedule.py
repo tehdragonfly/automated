@@ -1,4 +1,4 @@
-import os, time
+import time
 
 from datetime import datetime, timedelta
 from redis import StrictRedis
@@ -16,6 +16,7 @@ from automated.db import (
     Song,
     Stream,
 )
+from automated.helpers.args import args
 
 
 redis = StrictRedis(decode_responses=True)
@@ -23,18 +24,18 @@ redis = StrictRedis(decode_responses=True)
 
 def get_stream():
     with session_scope() as db:
-        return db.query(Stream).filter(Stream.url_name == os.environ["STREAM"]).one()
+        return db.query(Stream).filter(Stream.url_name == args.stream).one()
 
 
 def get_default_sequence():
     with session_scope() as db:
-        return db.query(Sequence).join(Stream).filter(Stream.url_name == os.environ["STREAM"]).first()
+        return db.query(Sequence).join(Stream).filter(Stream.url_name == args.stream).first()
 
 
 def find_event(last_event, range_start):
     with session_scope() as db:
         event_query = db.query(Event).filter(Event.stream_id == (
-            db.query(Stream.id).filter(Stream.url_name == os.environ["STREAM"])
+            db.query(Stream.id).filter(Stream.url_name == args.stream)
         ))
         if last_event:
             event_query = event_query.filter(Event.start_time > last_event.start_time)
