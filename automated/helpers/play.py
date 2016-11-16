@@ -14,10 +14,9 @@ redis = loop.run_until_complete(aioredis.create_redis(("127.0.0.1", 6379), encod
 executor = ThreadPoolExecutor()
 
 
-# TODO config
 PATHS = {
-    "song": "songs/",
-    "audio": "events/",
+    "song": (args.song_path or "songs") + "/",
+    "audio": (args.audio_path or "events") + "/",
 }
 
 
