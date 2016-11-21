@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from automated.helpers.plan import generate_plan, PastTargetTime
-from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_item
+from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_start, queue_event_item, queue_event_end
 from automated.helpers.schedule import get_stream, get_default_sequence, find_event, populate_sequence_items, pick_song
 
 
@@ -143,7 +143,13 @@ async def scheduler():
                 await queue_stop(next_time, next_event)
 
             else:
+                if current_event:
+                    await queue_event_end(next_time, current_event)
+
                 current_event, next_event = next_event, None
+
+                await queue_event_start(next_time, current_event)
+
                 # Convert to a list so we can pop items without the ORM trying
                 # to update the database.
                 current_event_items = list(current_event.items)
@@ -210,7 +216,8 @@ async def scheduler():
             or (not current_event.end_time and not current_event_items)
         ):
             print("EVENT OVER, RESETTING SEQUENCE")
-            current_event = None
+            await queue_event_end(next_time, current_event)
+            current_event  = None
             sequence       = await loop.run_in_executor(executor, get_default_sequence)
             sequence_items = await loop.run_in_executor(executor, populate_sequence_items, sequence)
 

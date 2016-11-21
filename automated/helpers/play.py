@@ -157,6 +157,10 @@ async def queue_stop(queue_time, event):
     })
 
 
+async def queue_event_start(queue_time, event):
+    pass
+
+
 async def queue_event_item(queue_time, event_item):
     if event_item.type == "song":
         return await queue_song(queue_time, event_item.song)
@@ -168,4 +172,8 @@ async def queue_event_item(queue_time, event_item):
         "event_item_id": event_item.id,
         "filename": str(event_item.id),
     })
+
+
+async def queue_event_end(queue_time, event):
+    pass
 
