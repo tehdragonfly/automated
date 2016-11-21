@@ -122,8 +122,15 @@ def log_song(song_id, length):
     db.commit()
 
 
-async def queue_song(queue_time, song, force_length=None):
+async def _queue(queue_time, item_info):
     queue_item_id = str(uuid4())
+    await redis.hmset_dict("item:" + queue_item_id, item_info)
+    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
+    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    return queue_item_id
+
+
+async def queue_song(queue_time, song, force_length=None):
     item_info = {
         "status": "queued",
         "type": "song",
@@ -135,38 +142,30 @@ async def queue_song(queue_time, song, force_length=None):
         "song_id": song.id,
         "filename": song.filename,
     }
-    await redis.hmset_dict("item:" + queue_item_id, item_info)
+    queue_item_id = await _queue(queue_time, item_info)
     if song.artists:
         await redis.sadd("item:" + queue_item_id + ":artists", *(_.id for _ in song.artists))
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
-    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    return queue_item_id
 
 
 async def queue_stop(queue_time, event):
     queue_item_id = str(uuid4())
-    item_info = {
+    return await _queue(queue_time, {
         "status": "queued",
         "type": "stop",
         "event_id": event.id,
-    }
-    await redis.hmset_dict("item:" + queue_item_id, item_info)
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
-    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    })
 
 
 async def queue_event_item(queue_time, event_item):
     if event_item.type == "song":
         return await queue_song(queue_time, event_item.song)
-    queue_item_id = str(uuid4())
-    item_info = {
+    return await _queue(queue_time, {
         "status": "queued",
         "type": "audio",
         "start": event_item.start.total_seconds(),
         "length": event_item.length.total_seconds(),
         "event_item_id": event_item.id,
         "filename": str(event_item.id),
-    }
-    await redis.hmset_dict("item:" + queue_item_id, item_info)
-    queue_timestamp = time.mktime(queue_time.timetuple()) + queue_time.microsecond / 1000000.0
-    await redis.zadd("play_queue", queue_timestamp, queue_item_id)
+    })
 
