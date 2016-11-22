@@ -132,24 +132,6 @@ class SequenceItem(Base):
         )
 
 
-class WeeklyEvent(Base):
-    __tablename__ = "weekly_events"
-    id = Column(Integer, primary_key=True)
-    day = Column(Integer, nullable=False)
-    time = Column(Time, nullable=False)
-    error_margin = Column(Interval, nullable=False)
-    name = Column(Unicode(50), nullable=False)
-    type = Column(Enum(u"audio", u"stop", name="event_type"))
-    length = Column(Interval, nullable=True)
-    filename = Column(Unicode(100), nullable=True)
-
-    def __repr__(self):
-        return (
-            "<WeeklyEvent #%s: %s %s, %s, %s>"
-            % (self.id, self.day, self.time, self.type, self.name)
-        )
-
-
 class Event(Base):
     __tablename__ = "events"
     __mapper_args__ = {"polymorphic_on": "type"}

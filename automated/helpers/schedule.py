@@ -111,3 +111,10 @@ def pick_song(queue_time, category_id=None, songs=None, artists=None, length=Non
 
         return song_query.first()
 
+
+def start_event(event_id):
+    with session_scope() as db:
+        db.query(Event).filter(Event.id == int(event_id)).update({
+            "played": True
+        }, synchronize_session=False)
+

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from automated.helpers.plan import generate_plan, PastTargetTime
 from automated.helpers.play import play_item, stop_item, queue_song, queue_stop, queue_event_start, queue_event_item, queue_event_end
-from automated.helpers.schedule import get_stream, get_default_sequence, find_event, populate_sequence_items, pick_song
+from automated.helpers.schedule import get_stream, get_default_sequence, find_event, populate_sequence_items, pick_song, start_event
 
 
 loop = asyncio.get_event_loop()
@@ -55,6 +55,10 @@ async def play_queue():
             await redis.hset("item:" + item_id, "status", "preparing")
             if item["type"] != "stop":
                 loop.create_task(play_item(queue_time, item_id, item))
+            elif item["type"] == "event_start":
+                executor.submit(start_event, item["event_id"])
+            elif item["type"] == "event_end":
+                pass
             else:
                 loop.create_task(stop_item(queue_time, item_id, item))
         await asyncio.sleep(0.01)

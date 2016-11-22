@@ -149,7 +149,6 @@ async def queue_song(queue_time, song, force_length=None):
 
 
 async def queue_stop(queue_time, event):
-    queue_item_id = str(uuid4())
     return await _queue(queue_time, {
         "status": "queued",
         "type": "stop",
@@ -158,7 +157,11 @@ async def queue_stop(queue_time, event):
 
 
 async def queue_event_start(queue_time, event):
-    pass
+    return await _queue(queue_time, {
+        "status": "queued",
+        "type": "event_start",
+        "event_id": event.id,
+    })
 
 
 async def queue_event_item(queue_time, event_item):
@@ -175,5 +178,9 @@ async def queue_event_item(queue_time, event_item):
 
 
 async def queue_event_end(queue_time, event):
-    pass
+    return await _queue(queue_time, {
+        "status": "queued",
+        "type": "event_end",
+        "event_id": event.id,
+    })
 
