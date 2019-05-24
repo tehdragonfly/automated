@@ -35,16 +35,11 @@ async def setup():
     await redis.set("running", "True")
 
 
-def split_zitems(zitems):
-    i = iter(zitems)
-    return zip(i, i)
-
-
 async def play_queue():
     while await redis.get("running") is not None:
         t = time.time()
         # Cue things up 10 seconds ahead.
-        play_items = split_zitems(await redis.zrangebyscore("play_queue", t - 1, t + 10, withscores=True))
+        play_items = await redis.zrangebyscore("play_queue", t - 1, t + 10, withscores=True)
         for item_id, queue_time in play_items:
             item = await redis.hgetall("item:" + item_id)
             if len(item) == 0:
