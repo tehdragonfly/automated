@@ -23,6 +23,8 @@ setup(
         "sqlalchemy",
     ],
     entry_points="""\
+        [console_scripts]
+        automated = automated.automation
     """,
 )
 
